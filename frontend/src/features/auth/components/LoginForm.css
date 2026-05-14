@@ -1,0 +1,112 @@
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 14px 16px;
+  min-height: 52px;
+  font-size: 15px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  outline: none;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.72);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #ff5a5f;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.12);
+}
+
+.form-group input::placeholder { color: var(--text-light); }
+
+.forgot-password-link {
+  align-self: flex-end;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff5a5f;
+  text-decoration: none;
+  transition: color 0.2s, opacity 0.2s;
+}
+
+.forgot-password-link:hover {
+  color: #e0474c;
+  text-decoration: underline;
+}
+
+.form-error {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d93025;
+  margin: -2px 0 0;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 14px 16px;
+  min-height: 52px;
+  background: linear-gradient(135deg, #ff5a5f, #ff7378);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  margin-top: 2px;
+  box-shadow: 0 14px 28px rgba(255, 90, 95, 0.22);
+}
+
+.auth-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e84e53, #ff6b70);
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(255, 90, 95, 0.28);
+}
+.auth-button:active:not(:disabled) { transform: translateY(0); }
+.auth-button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.create-account-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-light);
+  margin-top: 6px;
+}
+
+.create-account-link {
+  color: #ff5a5f;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s, text-decoration 0.15s;
+}
+.create-account-link:hover {
+  color: #e0474c;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
