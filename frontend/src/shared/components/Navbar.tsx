@@ -13,6 +13,7 @@ export function Navbar() {
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [dark, toggleDark] = useDarkMode();
   const bellRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -33,6 +34,16 @@ export function Navbar() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [bellOpen]);
+
+  useEffect(() => {
+    if (!avatarOpen) return;
+    const close = (e: MouseEvent) => {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node))
+        setAvatarOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [avatarOpen]);
 
   const clearSearch = () => dispatch({ type: "SET_FILTER", payload: "" });
 
@@ -331,56 +342,44 @@ export function Navbar() {
           </div>
 
           {isAuthenticated ? (
-            <div
-              className="menu-wrap"
-              onMouseEnter={() => setAvatarOpen(true)}
-              onMouseLeave={() => setAvatarOpen(false)}
-            >
-              <NavLink
-                to={
-                  user?.role === "host"
-                    ? "/host"
-                    : user?.role === "admin"
-                      ? "/admin"
-                      : "/dashboard"
-                }
-                className="flex items-center gap-2 rounded-full border border-[#ebebeb] bg-white px-2 py-1.5 pr-3 text-sm font-medium text-gray-700 hover:border-[#ff5a5f] hover:text-[#ff5a5f] transition-colors"
-                aria-label="Account"
+            <div className="menu-wrap" ref={avatarRef}>
+              <button
+                onClick={() => { setAvatarOpen((v) => !v); setBellOpen(false); }}
+                className={`menu-btn${avatarOpen ? " open" : ""}`}
+                aria-label="Account menu"
+                aria-expanded={avatarOpen}
               >
                 {user?.avatar ? (
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="h-8 w-8 rounded-full object-cover"
+                    className="h-7 w-7 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ff5a5f] text-xs font-bold text-white">
-                    {(
-                      user?.firstName?.[0] ??
-                      user?.name?.[0] ??
-                      "?"
-                    ).toUpperCase()}
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ff5a5f] text-xs font-bold text-white flex-shrink-0">
+                    {(user?.firstName?.[0] ?? user?.name?.[0] ?? "?").toUpperCase()}
                   </div>
                 )}
-                <span>Signed in</span>
-              </NavLink>
+                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>
+                  {user?.firstName ?? user?.name?.split(" ")[0] ?? "Account"}
+                </span>
+              </button>
 
               {avatarOpen && (
-                <div className="menu-dropdown" style={{ right: 0, left: "auto", minWidth: 160 }}>
+                <div className="menu-dropdown" style={{ right: 0, left: "auto", minWidth: 180 }}>
                   <NavLink
                     to={
-                      user?.role === "host"
-                        ? "/host"
-                        : user?.role === "admin"
-                          ? "/admin"
-                          : "/dashboard"
+                      user?.role === "host" ? "/host"
+                      : user?.role === "admin" ? "/admin"
+                      : "/dashboard"
                     }
                     className="menu-item menu-item-bold"
+                    onClick={() => setAvatarOpen(false)}
                   >
                     My account
                   </NavLink>
                   <button
-                    onClick={logout}
+                    onClick={() => { setAvatarOpen(false); logout(); }}
                     className="menu-item-btn"
                     style={{ color: "#ef4444" }}
                   >
