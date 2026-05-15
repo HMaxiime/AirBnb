@@ -377,11 +377,14 @@ export const profileService = {
 
 export interface AISearchResult {
   query: string;
+  offTopic?: boolean;
+  message?: string;
   extractedFilters: {
     location?: string;
     type?: string;
     guests?: number;
     maxPrice?: number;
+    amenities?: string[];
   };
   results: ExtendedListing[];
   count: number;

@@ -77,37 +77,42 @@ export function AISearchFloat() {
               </button>
             </form>
 
-            {result && !loading && (
+            {result && !loading && !result.offTopic && Object.keys(result.extractedFilters).length > 0 && (
               <div className="ai-float-tags">
                 {result.extractedFilters.location && (
-                  <span className="ai-float-tag">📍 {result.extractedFilters.location}</span>
+                  <span className="ai-float-tag">Location: {result.extractedFilters.location}</span>
                 )}
                 {result.extractedFilters.type && (
-                  <span className="ai-float-tag">🏠 {result.extractedFilters.type.charAt(0) + result.extractedFilters.type.slice(1).toLowerCase()}</span>
+                  <span className="ai-float-tag">Type: {result.extractedFilters.type.charAt(0) + result.extractedFilters.type.slice(1).toLowerCase()}</span>
                 )}
                 {result.extractedFilters.guests && (
-                  <span className="ai-float-tag">👥 {result.extractedFilters.guests}+ guests</span>
+                  <span className="ai-float-tag">{result.extractedFilters.guests}+ guests</span>
                 )}
                 {result.extractedFilters.maxPrice && (
-                  <span className="ai-float-tag">💰 max ${result.extractedFilters.maxPrice}/night</span>
+                  <span className="ai-float-tag">Max ${result.extractedFilters.maxPrice}/night</span>
                 )}
+                {result.extractedFilters.amenities?.map((a) => (
+                  <span key={a} className="ai-float-tag">{a}</span>
+                ))}
               </div>
             )}
 
             {loading && (
               <div className="ai-float-loading">
                 <span className="ai-float-spinner" />
-                <span>Searching with AI…</span>
+                <span>Searching available properties…</span>
               </div>
             )}
 
             {result && !loading && (
               <div className="ai-float-results">
-                {result.count === 0 ? (
-                  <p className="ai-float-empty">No listings matched. Try rephrasing your query.</p>
+                {result.offTopic ? (
+                  <p className="ai-float-empty">{result.message}</p>
+                ) : result.count === 0 ? (
+                  <p className="ai-float-empty">No properties found matching your request. Try adjusting your search.</p>
                 ) : (
                   <>
-                    <p className="ai-float-count">{result.count} result{result.count !== 1 ? "s" : ""} found</p>
+                    <p className="ai-float-count">{result.count} propert{result.count !== 1 ? "ies" : "y"} found</p>
                     {result.results.map((listing) => (
                       <button
                         key={listing.id}
@@ -137,6 +142,7 @@ export function AISearchFloat() {
                 )}
               </div>
             )}
+
           </div>
         </>
       )}

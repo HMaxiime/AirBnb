@@ -7,27 +7,50 @@ import  prisma  from "../../config/prisma.js";
 // ─── Natural Language Search ──────────────────────────────────────────────────
 
 const searchPrompt = ChatPromptTemplate.fromTemplate(`
-You are a search assistant for an Airbnb-like platform.
-Extract search filters from the user's natural language query.
+You are a property search assistant for an accommodation booking platform.
+Your sole purpose is to help customers find available properties to rent or stay in.
 
 User query: {query}
 
-Return a JSON object with these optional fields:
-- location: string (city or area mentioned)
-- type: one of APARTMENT, HOUSE, ROOM, OTHER (pick the closest match)
-- guests: number (max guests needed)
+First decide: is this query about finding accommodation, a property, a house, an apartment, a room, or a place to stay?
+
+If NO — the query is about something unrelated (food, weather, people, events, general questions, anything not about renting a place) — return exactly this and nothing else:
+{{"offTopic": true}}
+
+If YES — extract search filters and return a JSON object with only the fields that apply:
+- location: string (city, area, or neighborhood mentioned)
+- type: one of APARTMENT, HOUSE, ROOM, OTHER
+- guests: number (number of people or guests)
 - maxPrice: number (maximum price per night in USD)
+- amenities: array of strings chosen strictly from the list below
 
-Type mapping rules:
-- villa, mansion, cottage, chalet → HOUSE
+Available amenities — use exact spelling from this list only:
+WiFi, Pool, TV, Parking, Kitchen, Air conditioning, Gym, Washer, Balcony, Beach access, Pet friendly, Breakfast included
+
+Amenity keyword mapping:
+- beach, sea, ocean, coastal, seaside, waterfront → Beach access
+- tv, television, screen, netflix, streaming → TV
+- swim, swimming, pool → Pool
+- wifi, internet, wireless, broadband → WiFi
+- parking, garage, car space, driveway → Parking
+- gym, fitness, workout, exercise → Gym
+- kitchen, cooking, kitchenette, cook → Kitchen
+- ac, air con, air conditioning, cooling, climate → Air conditioning
+- washer, washing machine, laundry, dryer → Washer
+- balcony, terrace, patio, deck → Balcony
+- pets, dog, cat, animal → Pet friendly
+- breakfast, morning meal, meals → Breakfast included
+
+Type mapping:
+- villa, mansion, cottage, chalet, bungalow → HOUSE
 - cabin, studio, loft → OTHER
-- apartment, condo, flat → APARTMENT
-- room, private room, shared → ROOM
+- apartment, condo, flat, penthouse → APARTMENT
+- room, private room, shared room, bed → ROOM
 
-Return ONLY valid JSON. No explanation. No markdown. Example:
-{{"location": "Miami", "type": "HOUSE", "guests": 4, "maxPrice": 300}}
+Return ONLY valid JSON. No explanation. No markdown. No extra text.
+Example: {{"location": "Paris", "type": "APARTMENT", "guests": 2, "maxPrice": 150, "amenities": ["WiFi", "Pool"]}}
 
-If a field is not mentioned, omit it from the JSON.
+Omit any field that is not mentioned in the query.
 `);
 
 const parser = new JsonOutputParser();
@@ -49,11 +72,25 @@ export async function naturalLanguageSearch(req: Request, res: Response) {
 
   try {
     const filters = await searchChain.invoke({ query }) as {
+      offTopic?: boolean;
       location?: string;
       type?: string;
       guests?: number;
       maxPrice?: number;
+      amenities?: string[];
     };
+
+    // Query is not related to accommodation — return a clean response
+    if (filters.offTopic) {
+      return res.json({
+        query,
+        offTopic: true,
+        message: "No results found. Please search for a property, house, apartment, or room to stay in.",
+        extractedFilters: {},
+        results: [],
+        count: 0,
+      });
+    }
 
     const where: Record<string, unknown> = { status: "APPROVED" };
 
@@ -69,6 +106,9 @@ export async function naturalLanguageSearch(req: Request, res: Response) {
     }
     if (filters.maxPrice) {
       where["price"] = { lte: filters.maxPrice };
+    }
+    if (filters.amenities && filters.amenities.length > 0) {
+      where["amenities"] = { hasSome: filters.amenities };
     }
 
     const listings = await prisma.listing.findMany({
