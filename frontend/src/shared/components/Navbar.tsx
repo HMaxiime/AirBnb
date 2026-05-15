@@ -10,10 +10,8 @@ export function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const { state, dispatch } = useStore();
   const [bellOpen, setBellOpen] = useState(false);
-  const [avatarOpen, setAvatarOpen] = useState(false);
   const [dark, toggleDark] = useDarkMode();
   const bellRef = useRef<HTMLDivElement>(null);
-  const avatarRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -34,16 +32,6 @@ export function Navbar() {
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [bellOpen]);
-
-  useEffect(() => {
-    if (!avatarOpen) return;
-    const close = (e: MouseEvent) => {
-      if (avatarRef.current && !avatarRef.current.contains(e.target as Node))
-        setAvatarOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [avatarOpen]);
 
   const clearSearch = () => dispatch({ type: "SET_FILTER", payload: "" });
 
@@ -342,12 +330,15 @@ export function Navbar() {
           </div>
 
           {isAuthenticated ? (
-            <div className="menu-wrap" ref={avatarRef}>
-              <button
-                onClick={() => { setAvatarOpen((v) => !v); setBellOpen(false); }}
-                className={`menu-btn${avatarOpen ? " open" : ""}`}
-                aria-label="Account menu"
-                aria-expanded={avatarOpen}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <NavLink
+                to={
+                  user?.role === "host" ? "/host"
+                  : user?.role === "admin" ? "/admin"
+                  : "/dashboard"
+                }
+                className="menu-btn"
+                aria-label="My account"
               >
                 {user?.avatar ? (
                   <img
@@ -360,33 +351,18 @@ export function Navbar() {
                     {(user?.firstName?.[0] ?? user?.name?.[0] ?? "?").toUpperCase()}
                   </div>
                 )}
-                <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>
+                <span style={{ fontSize: 13, fontWeight: 500 }}>
                   {user?.firstName ?? user?.name?.split(" ")[0] ?? "Account"}
                 </span>
-              </button>
+              </NavLink>
 
-              {avatarOpen && (
-                <div className="menu-dropdown" style={{ right: 0, left: "auto", minWidth: 180 }}>
-                  <NavLink
-                    to={
-                      user?.role === "host" ? "/host"
-                      : user?.role === "admin" ? "/admin"
-                      : "/dashboard"
-                    }
-                    className="menu-item menu-item-bold"
-                    onClick={() => setAvatarOpen(false)}
-                  >
-                    My account
-                  </NavLink>
-                  <button
-                    onClick={() => { setAvatarOpen(false); logout(); }}
-                    className="menu-item-btn"
-                    style={{ color: "#ef4444" }}
-                  >
-                    Log out
-                  </button>
-                </div>
-              )}
+              <button
+                onClick={logout}
+                className="navbar-logout-btn"
+                aria-label="Log out"
+              >
+                Log out
+              </button>
             </div>
           ) : (
             <NavLink

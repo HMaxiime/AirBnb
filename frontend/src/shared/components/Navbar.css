@@ -211,6 +211,24 @@
 
 .menu-item-btn:hover { background: var(--surface-2); }
 
+.navbar-logout-btn {
+  padding: 7px 14px;
+  border: 1px solid #fca5a5;
+  border-radius: 22px;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ef4444;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.navbar-logout-btn:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
 @media (max-width: 768px) {
   .navbar-container {
     grid-template-columns: auto 1fr auto;
