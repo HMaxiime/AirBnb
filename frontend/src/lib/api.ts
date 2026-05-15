@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.APP_BASE_URL ?? "http://localhost:3000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api/v1";
 
 const client = axios.create({
   baseURL: API_URL,
@@ -27,7 +27,11 @@ import {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
-async function fetchApi<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function fetchApi<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
   const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
@@ -59,8 +63,10 @@ export const listingsApi = {
   getById: (id: string) => mockListings.getById(id),
   getByHost: (hostId: string) => mockListings.getByHost(hostId),
   getPending: () => mockListings.getPending(),
-  create: (data: Omit<ExtendedListing, "id" | "rating">) => mockListings.create(data),
-  update: (id: string, data: Partial<ExtendedListing>) => mockListings.update(id, data),
+  create: (data: Omit<ExtendedListing, "id" | "rating">) =>
+    mockListings.create(data),
+  update: (id: string, data: Partial<ExtendedListing>) =>
+    mockListings.update(id, data),
   delete: (id: string) => mockListings.delete(id),
   approve: (id: string) => mockListings.approve(id),
   reject: (id: string) => mockListings.reject(id),
@@ -70,14 +76,17 @@ export const bookingsApi = {
   getByGuest: (guestId: string) => mockBookings.getByGuest(guestId),
   getByHost: (hostId: string) => mockBookings.getByHost(hostId),
   getAll: () => mockBookings.getAll(),
-  create: (data: Omit<Booking, "id" | "createdAt">) => mockBookings.create(data),
+  create: (data: Omit<Booking, "id" | "createdAt">) =>
+    mockBookings.create(data),
   cancel: (id: string) => mockBookings.cancel(id),
-  updateStatus: (id: string, status: Booking["status"]) => mockBookings.updateStatus(id, status),
+  updateStatus: (id: string, status: Booking["status"]) =>
+    mockBookings.updateStatus(id, status),
 };
 
 export const savedApi = {
   get: (userId: string) => mockSaved.get(userId),
-  toggle: (userId: string, listingId: string) => mockSaved.toggle(userId, listingId),
+  toggle: (userId: string, listingId: string) =>
+    mockSaved.toggle(userId, listingId),
 };
 
 export const adminApi = {
@@ -93,4 +102,3 @@ export const reviewsApi = {
 };
 
 export type { ExtendedListing, Booking, MockUser, UserRole, Review };
-
