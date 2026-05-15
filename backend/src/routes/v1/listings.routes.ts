@@ -9,8 +9,9 @@ import {
   addPhotos,
   deletePhoto,
   listingstatus,
+  patchListingStatus,
 } from "../../controllers/listings.controller.js";
-import { authenticate, requireHost } from "../../middlewares/auth.middleware.js";
+import { authenticate, requireHost, requireAdmin } from "../../middlewares/auth.middleware.js";
 import { strictLimiter } from "../../middlewares/rateLimiter.js";
 import upload from "../../config/multer.js";
 
@@ -213,5 +214,8 @@ router.delete("/:id/photos/:photoId", authenticate, requireHost, deletePhoto);
 
 // Delete the entire listing (also removes its Cloudinary assets).
 router.delete("/:id", authenticate, requireHost, strictLimiter, deleteListing);
+
+// Admin: approve or reject a listing.
+router.patch("/:id/status", authenticate, requireAdmin, patchListingStatus);
 
 export default router;

@@ -1,11 +1,15 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { listingService } from "../../../lib/apiService";
 import toast from "react-hot-toast";
 
-// Listing approval requires a `status` field in the backend schema — not yet supported.
 export function useApprove() {
-  return {
-    mutate: (_id: string) => {
-      toast("Listing approval requires backend status field support.", { icon: "⚠️" });
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => listingService.setStatus(id, "APPROVED"),
+    onSuccess: () => {
+      toast.success("Listing approved");
+      qc.invalidateQueries({ queryKey: ["listings", "pending"] });
     },
-    isPending: false,
-  };
+    onError: () => toast.error("Failed to approve listing"),
+  });
 }

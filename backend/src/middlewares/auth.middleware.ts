@@ -72,11 +72,19 @@ export function requireHost(
   next();
 }
 
-// ─── requireGuest ─────────────────────────────────────────────────────────────
-// Must run after authenticate.
-// Returns 403 if the user's role is not GUEST.
+// ─── requireAdmin ─────────────────────────────────────────────────────────────
+export function requireAdmin(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  if (req.role !== "ADMIN") {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  next();
+}
 
-// Guard guest-only endpoints after authentication has already succeeded.
+// ─── requireGuest ─────────────────────────────────────────────────────────────
 export function requireGuest(
   req: AuthRequest,
   res: Response,

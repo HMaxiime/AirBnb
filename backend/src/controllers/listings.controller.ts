@@ -53,12 +53,23 @@ async function uploadFiles(
 // ─── GET /listings ─────────────────────────────────────────────────────────────
 export async function getAllListings(req: Request, res: Response, next: NextFunction) {
   try {
-    const page   = parseInt(req.query["page"]   as string) || 1;
-    const limit  = parseInt(req.query["limit"]  as string) || 20;
-    const skip   = (page - 1) * limit;
-    const hostId = req.query["hostId"] as string | undefined;
+    const page        = parseInt(req.query["page"]  as string) || 1;
+    const limit       = parseInt(req.query["limit"] as string) || 20;
+    const skip        = (page - 1) * limit;
+    const hostId      = req.query["hostId"] as string | undefined;
+    const statusParam = (req.query["status"] as string | undefined)?.toUpperCase();
 
-    const where = hostId ? { hostId } : {};
+    // Hosts fetching their own listings see all statuses.
+    // Admin passing ?status=PENDING gets the moderation queue.
+    // Everyone else (public browse) sees only APPROVED listings.
+    let where: Record<string, unknown>;
+    if (hostId) {
+      where = { hostId };
+    } else if (statusParam && ["PENDING", "APPROVED", "REJECTED"].includes(statusParam)) {
+      where = { status: statusParam };
+    } else {
+      where = { status: "APPROVED" };
+    }
 
     const now = new Date();
     const [listings, total] = await Promise.all([
@@ -137,6 +148,7 @@ export async function createListing(req: AuthRequest, res: Response, next: NextF
         type:        data.type,
         amenities:   data.amenities,
         hostId:      req.userId,
+        status:      "PENDING",
       },
     });
 
@@ -315,6 +327,34 @@ export async function deletePhoto(req: AuthRequest, res: Response, next: NextFun
     await prisma.listingPhoto.delete({ where: { id: photoId } });
 
     res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ─── PATCH /listings/:id/status — admin only ──────────────────────────────────
+export async function patchListingStatus(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const id     = req.params["id"] as string;
+    const status = (req.body["status"] as string | undefined)?.toUpperCase();
+
+    if (!["APPROVED", "REJECTED", "PENDING"].includes(status ?? "")) {
+      return res.status(400).json({ error: "status must be APPROVED, REJECTED, or PENDING" });
+    }
+
+    const listing = await prisma.listing.findUnique({ where: { id } });
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+
+    const updated = await prisma.listing.update({
+      where: { id },
+      data:  { status: status as "APPROVED" | "REJECTED" | "PENDING" },
+      include: {
+        host:   { select: { id: true, name: true, email: true } },
+        photos: { select: { id: true, url: true, publicId: true } },
+      },
+    });
+
+    res.json(updated);
   } catch (error) {
     next(error);
   }

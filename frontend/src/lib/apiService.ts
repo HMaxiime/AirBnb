@@ -31,10 +31,10 @@ export interface BackendListing {
   guests: number;
   type: "APARTMENT" | "HOUSE" | "ROOM" | "OTHER";
   amenities: string[];
+  status: "PENDING" | "APPROVED" | "REJECTED";
   host: { id: string; name: string; email: string };
   photos: BackendPhoto[];
   review?: { rating: number }[];
-  // Included by the backend to compute real availability.
   booking?: { id: string; checkIn?: string; checkOut?: string }[];
   createdAt: string;
   updatedAt: string;
@@ -74,6 +74,12 @@ function typeToCategory(type: string): "house" | "apartment" | "villa" {
   return "house";
 }
 
+function toFrontendStatus(s: BackendListing["status"]): "pending" | "published" | "rejected" {
+  if (s === "APPROVED") return "published";
+  if (s === "REJECTED") return "rejected";
+  return "pending";
+}
+
 export function adaptListing(b: BackendListing): ExtendedListing {
   const photoUrls  = b.photos.map((p) => p.url);
   const avgRating  = b.review?.length
@@ -95,7 +101,7 @@ export function adaptListing(b: BackendListing): ExtendedListing {
     availableFrom: "",
     img:           photoUrls[0] ?? "",
     category:      typeToCategory(b.type),
-    status:        "published" as const,
+    status:        toFrontendStatus(b.status),
     hostId:        b.host.id,
     hostName:      b.host.name,
     photos:        photoUrls,
@@ -264,6 +270,17 @@ export const listingService = {
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/listings/${id}`);
+  },
+
+  async getPending(): Promise<ExtendedListing[]> {
+    const { data } = await apiClient.get<{ data: BackendListing[]; meta: { total: number } }>(
+      "/listings", { params: { status: "PENDING", limit: 100 } }
+    );
+    return data.data.map(adaptListing);
+  },
+
+  async setStatus(id: string, status: "APPROVED" | "REJECTED"): Promise<void> {
+    await apiClient.patch(`/listings/${id}/status`, { status });
   },
 };
 
