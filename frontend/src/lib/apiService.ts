@@ -373,6 +373,34 @@ export const profileService = {
   },
 };
 
+// ─── AI service ──────────────────────────────────────────────────────────────
+
+export interface AISearchResult {
+  query: string;
+  extractedFilters: {
+    location?: string;
+    type?: string;
+    guests?: number;
+    maxPrice?: number;
+  };
+  results: ExtendedListing[];
+  count: number;
+}
+
+export const aiService = {
+  async search(query: string): Promise<AISearchResult> {
+    const { data } = await apiClient.post<{ query: string; extractedFilters: AISearchResult["extractedFilters"]; results: BackendListing[]; count: number }>(
+      "/ai/search", { query }
+    );
+    return {
+      query:            data.query,
+      extractedFilters: data.extractedFilters,
+      results:          data.results.map(adaptListing),
+      count:            data.count,
+    };
+  },
+};
+
 // ─── Upload service ───────────────────────────────────────────────────────────
 
 export const uploadService = {

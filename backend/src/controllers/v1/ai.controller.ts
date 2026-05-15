@@ -14,12 +14,18 @@ User query: {query}
 
 Return a JSON object with these optional fields:
 - location: string (city or area mentioned)
-- type: one of APARTMENT, HOUSE, VILLA, CABIN (if mentioned)
+- type: one of APARTMENT, HOUSE, ROOM, OTHER (pick the closest match)
 - guests: number (max guests needed)
 - maxPrice: number (maximum price per night in USD)
 
+Type mapping rules:
+- villa, mansion, cottage, chalet → HOUSE
+- cabin, studio, loft → OTHER
+- apartment, condo, flat → APARTMENT
+- room, private room, shared → ROOM
+
 Return ONLY valid JSON. No explanation. No markdown. Example:
-{{"location": "Miami", "type": "VILLA", "guests": 4, "maxPrice": 300}}
+{{"location": "Miami", "type": "HOUSE", "guests": 4, "maxPrice": 300}}
 
 If a field is not mentioned, omit it from the JSON.
 `);
@@ -28,6 +34,12 @@ const parser = new JsonOutputParser();
 
 const searchChain = searchPrompt.pipe(model).pipe(parser);
 
+// Fallback map so the model can never return an invalid type
+const TYPE_MAP: Record<string, string> = {
+  VILLA: "HOUSE", CABIN: "OTHER", MANSION: "HOUSE",
+  COTTAGE: "HOUSE", CHALET: "HOUSE", STUDIO: "OTHER", LOFT: "OTHER",
+};
+
 export async function naturalLanguageSearch(req: Request, res: Response) {
   const { query } = req.body;
 
@@ -35,44 +47,50 @@ export async function naturalLanguageSearch(req: Request, res: Response) {
     return res.status(400).json({ error: "query is required" });
   }
 
-  // Extract filters from natural language using AI
-  const filters = await searchChain.invoke({ query }) as {
-    location?: string;
-    type?: string;
-    guests?: number;
-    maxPrice?: number;
-  };
+  try {
+    const filters = await searchChain.invoke({ query }) as {
+      location?: string;
+      type?: string;
+      guests?: number;
+      maxPrice?: number;
+    };
 
-  // Build Prisma where clause from extracted filters
-  const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { status: "APPROVED" };
 
-  if (filters.location) {
-    where["location"] = { contains: filters.location, mode: "insensitive" };
-  }
-  if (filters.type) {
-    where["type"] = filters.type;
-  }
-  if (filters.guests) {
-    where["guests"] = { gte: filters.guests };
-  }
-  if (filters.maxPrice) {
-    where["price"] = { lte: filters.maxPrice };
-  }
+    if (filters.location) {
+      where["location"] = { contains: filters.location, mode: "insensitive" };
+    }
+    if (filters.type) {
+      const t = filters.type.toUpperCase();
+      where["type"] = TYPE_MAP[t] ?? t;
+    }
+    if (filters.guests) {
+      where["guests"] = { gte: filters.guests };
+    }
+    if (filters.maxPrice) {
+      where["price"] = { lte: filters.maxPrice };
+    }
 
-  const listings = await prisma.listing.findMany({
-    where,
-    include: {
-      host: { select: { name: true, avatar: true } },
-    },
-    take: 10,
-  });
+    const listings = await prisma.listing.findMany({
+      where,
+      include: {
+        host:   { select: { id: true, name: true, email: true } },
+        photos: { select: { id: true, url: true, publicId: true } },
+        review: { select: { rating: true } },
+        booking: {
+          where:  { status: "CONFIRMED", checkOut: { gte: new Date() } },
+          select: { id: true },
+          take:   1,
+        },
+      },
+      take: 20,
+    });
 
-  res.json({
-    query,
-    extractedFilters: filters,
-    results: listings,
-    count: listings.length,
-  });
+    res.json({ query, extractedFilters: filters, results: listings, count: listings.length });
+  } catch (err) {
+    console.error("AI search error:", err);
+    res.status(500).json({ error: "AI search failed. Please try again." });
+  }
 }
 
 // ─── Listing Description Generator ───────────────────────────────────────────
@@ -106,14 +124,19 @@ export async function generateListingDescription(req: Request, res: Response) {
     return res.status(400).json({ error: "title, location, type, guests, amenities, and price are required" });
   }
 
-  const description = await descriptionChain.invoke({
-    title,
-    location,
-    type,
-    guests,
-    amenities: Array.isArray(amenities) ? amenities.join(", ") : amenities,
-    price,
-  });
+  try {
+    const description = await descriptionChain.invoke({
+      title,
+      location,
+      type,
+      guests,
+      amenities: Array.isArray(amenities) ? amenities.join(", ") : amenities,
+      price,
+    });
 
-  res.json({ description });
+    res.json({ description });
+  } catch (err) {
+    console.error("AI description error:", err);
+    res.status(500).json({ error: "Description generation failed. Please try again." });
+  }
 }

@@ -1,8 +1,9 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Spinner } from "../../../shared/components/Spinner";
 import { List } from "../../../shared/components/List";
 import { Card } from "../components/Card";
 import { useListings } from "../hooks/useListings";
+import { useAISearch } from "../hooks/useAISearch";
 import { useStore } from "../../../store/StoreContext";
 import { useFavorites } from "../hooks/useFavorites";
 import { ExtendedListing } from "../../../lib/api";
@@ -34,15 +35,30 @@ export function ListingsPage(): React.JSX.Element {
   const [filters, setFilters] = useState<Filters>(DEFAULT);
   const [savedOnly, setSavedOnly] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [aiQuery, setAiQuery] = useState("");
 
   const { data: listings = [], isLoading, isError, isFetching, refetch } = useListings();
-  console.log(listings)
+  const { mutate: runAISearch, data: aiResult, isPending: aiLoading, reset: clearAI } = useAISearch();
   const { state, dispatch } = useStore();
   const { count } = useFavorites();
+  const aiInputRef = useRef<HTMLInputElement>(null);
+
+  const isAIMode = !!aiResult;
+
+  const handleAISearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (aiQuery.trim()) runAISearch(aiQuery.trim());
+  };
+
+  const handleClearAI = () => {
+    clearAI();
+    setAiQuery("");
+  };
 
   const set = (patch: Partial<Filters>): void => setFilters((f) => ({ ...f, ...patch }));
 
   const filteredListings = useMemo<ExtendedListing[]>(() => {
+    if (isAIMode) return aiResult.results;
     let r = listings;
     if (state.filter.trim()) {
       const q = state.filter.toLowerCase();
@@ -52,7 +68,7 @@ export function ListingsPage(): React.JSX.Element {
     if (filters.minRating > 0)      r = r.filter((l) => l.rating >= filters.minRating);
     if (savedOnly)                  r = r.filter((l) => state.saved.includes(l.id));
     return r;
-  }, [listings, state.filter, state.saved, filters, savedOnly]);
+  }, [listings, aiResult, isAIMode, state.filter, state.saved, filters, savedOnly]);
 
   const hasActive = filters.category !== "all" || filters.minRating > 0 || savedOnly;
 
@@ -147,14 +163,60 @@ export function ListingsPage(): React.JSX.Element {
       )}
 
       <main className="listings-main">
+        {/* AI Search Bar */}
+        <form onSubmit={handleAISearch} className="ai-search-bar">
+          <div className="ai-search-icon">✦</div>
+          <input
+            ref={aiInputRef}
+            type="text"
+            className="ai-search-input"
+            placeholder="Ask AI — e.g. cozy house for 4 people under $200/night in Paris"
+            value={aiQuery}
+            onChange={(e) => setAiQuery(e.target.value)}
+            disabled={aiLoading}
+          />
+          {isAIMode ? (
+            <button type="button" onClick={handleClearAI} className="ai-clear-btn">
+              Clear
+            </button>
+          ) : (
+            <button type="submit" className="ai-submit-btn" disabled={aiLoading || !aiQuery.trim()}>
+              {aiLoading ? "Searching…" : "Search"}
+            </button>
+          )}
+        </form>
+
+        {/* AI result context */}
+        {isAIMode && (
+          <div className="ai-result-banner">
+            <span className="ai-result-label">✦ AI results for "{aiResult.query}"</span>
+            <div className="ai-tags">
+              {aiResult.extractedFilters.location && (
+                <span className="ai-tag">📍 {aiResult.extractedFilters.location}</span>
+              )}
+              {aiResult.extractedFilters.type && (
+                <span className="ai-tag">🏠 {aiResult.extractedFilters.type.toLowerCase()}</span>
+              )}
+              {aiResult.extractedFilters.guests && (
+                <span className="ai-tag">👥 {aiResult.extractedFilters.guests}+ guests</span>
+              )}
+              {aiResult.extractedFilters.maxPrice && (
+                <span className="ai-tag">💰 max ${aiResult.extractedFilters.maxPrice}/night</span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="listings-controls">
-          {isFetching && <p style={{ color: "#ff5a5f", fontSize: 13, margin: 0 }}>Refreshing…</p>}
+          {!isAIMode && isFetching && <p style={{ color: "#ff5a5f", fontSize: 13, margin: 0 }}>Refreshing…</p>}
           <p className="results-count">
             <strong>{filteredListings.length}</strong> {filteredListings.length === 1 ? "listing" : "listings"}
           </p>
-          <button className="filter-mobile-btn" onClick={() => setDrawerOpen(true)}>
-            ⚙ Filters {hasActive && <span className="filter-dot" />}
-          </button>
+          {!isAIMode && (
+            <button className="filter-mobile-btn" onClick={() => setDrawerOpen(true)}>
+              ⚙ Filters {hasActive && <span className="filter-dot" />}
+            </button>
+          )}
         </div>
 
         <List<ExtendedListing>

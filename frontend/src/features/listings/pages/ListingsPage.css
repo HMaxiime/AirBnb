@@ -4,6 +4,110 @@
   display: flex;
 }
 
+/* ── AI Search Bar ── */
+.ai-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: var(--surface);
+  border: 1.5px solid #e0d7ff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.07);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ai-search-bar:focus-within {
+  border-color: #7c3aed;
+  box-shadow: 0 2px 16px rgba(124, 58, 237, 0.15);
+}
+
+.ai-search-icon {
+  font-size: 16px;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.ai-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+  color: var(--text);
+  min-width: 0;
+}
+
+.ai-search-input::placeholder { color: var(--text-muted); }
+.ai-search-input:disabled { opacity: 0.6; }
+
+.ai-submit-btn {
+  padding: 6px 16px;
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ai-submit-btn:hover:not(:disabled) { background: #6d28d9; }
+.ai-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ai-clear-btn {
+  padding: 6px 14px;
+  background: none;
+  border: 1px solid #e0d7ff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #7c3aed;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.ai-clear-btn:hover { background: #f5f3ff; }
+
+.ai-result-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f5f3ff;
+  border: 1px solid #e0d7ff;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.ai-result-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.ai-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-tag {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: white;
+  border: 1px solid #e0d7ff;
+  border-radius: 20px;
+  color: #5b21b6;
+  font-weight: 500;
+}
+
 /* ── Sidebar ── */
 .filter-sidebar {
   width: 220px;
