@@ -6,6 +6,7 @@ import { Footer } from "./shared/components/Footer";
 import { NotFound } from "./shared/components/NotFound";
 import { ProtectedRoute } from "./shared/components/ProtectedRoute";
 import { Spinner } from "./shared/components/Spinner";
+import { AISearchFloat } from "./shared/components/AISearchFloat";
 import { ListingsPage } from "./features/listings";
 import { LoginPage, SignupPage } from "./features/auth";
 
@@ -263,6 +264,7 @@ function App() {
         </Routes>
       </Suspense>
       {showFooter && <Footer />}
+      {!location.pathname.startsWith("/admin") && <AISearchFloat />}
     </>
   );
 }
