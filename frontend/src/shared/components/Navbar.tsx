@@ -39,10 +39,7 @@ export function Navbar() {
     <nav className="navbar">
       <div className="navbar-container">
         {/* Left: Logo */}
-        <NavLink
-          to="/"
-          className="brand-link"
-        >
+        <NavLink to="/" className="brand-link">
           <span className="brand-text">
             Air<span className="brand-b">b</span>nb
           </span>
@@ -147,7 +144,6 @@ export function Navbar() {
               className="icon-btn"
               onClick={() => {
                 setBellOpen((v) => !v);
-                setAvatarOpen(false);
               }}
               aria-label="Notifications"
               style={{ position: "relative" }}
@@ -333,9 +329,11 @@ export function Navbar() {
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <NavLink
                 to={
-                  user?.role === "host" ? "/host"
-                  : user?.role === "admin" ? "/admin"
-                  : "/dashboard"
+                  user?.role === "host"
+                    ? "/host"
+                    : user?.role === "admin"
+                      ? "/admin"
+                      : "/dashboard"
                 }
                 className="menu-btn"
                 aria-label="My account"
@@ -348,7 +346,11 @@ export function Navbar() {
                   />
                 ) : (
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#ff5a5f] text-xs font-bold text-white flex-shrink-0">
-                    {(user?.firstName?.[0] ?? user?.name?.[0] ?? "?").toUpperCase()}
+                    {(
+                      user?.firstName?.[0] ??
+                      user?.name?.[0] ??
+                      "?"
+                    ).toUpperCase()}
                   </div>
                 )}
                 <span style={{ fontSize: 13, fontWeight: 500 }}>
