@@ -29,7 +29,7 @@ export interface BackendListing {
   price: number;
   location: string;
   guests: number;
-  type: "APARTMENT" | "HOUSE" | "ROOM" | "OTHER";
+  type: "APARTMENT" | "HOUSE" | "VILLA" | "OTHER";
   amenities: string[];
   status: "PENDING" | "APPROVED" | "REJECTED";
   host: { id: string; name: string; email: string };
@@ -71,6 +71,7 @@ export interface AdminStats {
 function typeToCategory(type: string): "house" | "apartment" | "villa" {
   if (type === "APARTMENT") return "apartment";
   if (type === "HOUSE")     return "house";
+  if (type === "VILLA")     return "villa";
   return "house";
 }
 

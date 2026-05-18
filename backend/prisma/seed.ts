@@ -241,7 +241,7 @@ async function main() {
       price: 75,
       location: "Brooklyn, New York, USA",
       guests: 1,
-      type: "ROOM",
+      type: "VILLA",
       amenities: ["WiFi", "Kitchen access", "Laundry", "Smart TV", "Workspace"],
       hostId: sarah.id,
       photos: {

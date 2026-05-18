@@ -94,10 +94,10 @@ function PhotoSlot({ label, required, file, onChange }: SlotProps) {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-const CATEGORY_TO_TYPE: Record<string, "APARTMENT" | "HOUSE" | "ROOM" | "OTHER"> = {
+const CATEGORY_TO_TYPE: Record<string, "APARTMENT" | "HOUSE" | "VILLA" | "OTHER"> = {
   house:     "HOUSE",
   apartment: "APARTMENT",
-  villa:     "OTHER",
+  villa:     "VILLA",
 };
 
 export function CreateListingPage(): React.JSX.Element {

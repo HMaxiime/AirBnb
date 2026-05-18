@@ -7,7 +7,7 @@ export const createListingSchema = z.object({
   location:    z.string().min(1, "Location is required"),
   price:       z.number().positive("Price must be a positive number"),
   guests:      z.number().int().min(1, "At least 1 guest is required"),
-  type:        z.enum(["APARTMENT", "HOUSE", "ROOM", "OTHER"]),
+  type:        z.enum(["APARTMENT", "HOUSE", "VILLA", "OTHER"]),
   amenities:   z.array(z.string()).default([]),
 });
 

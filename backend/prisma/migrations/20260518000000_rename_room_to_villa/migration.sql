@@ -1,0 +1,1 @@
+ALTER TYPE "listingType" RENAME VALUE 'ROOM' TO 'VILLA';

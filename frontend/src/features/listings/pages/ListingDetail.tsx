@@ -27,7 +27,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
-function ReviewsSection({ listingId }: { listingId: string }) {
+function ReviewsSection({ listingId, isHost }: { listingId: string; isHost: boolean }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [rating, setRating] = useState(0);
@@ -87,23 +87,25 @@ function ReviewsSection({ listingId }: { listingId: string }) {
         </div>
       )}
 
-      <div className="review-form-wrap">
-        <h3 className="review-form-title">Leave a review</h3>
-        <form onSubmit={handleSubmit} className="review-form">
-          <StarPicker value={rating} onChange={setRating} />
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Share your experience with this property…"
-            rows={4}
-            className="review-textarea"
-          />
-          {error && <p className="review-error">{error}</p>}
-          <button type="submit" disabled={isPending} className="review-submit">
-            {isPending ? "Submitting…" : "Submit review"}
-          </button>
-        </form>
-      </div>
+      {!isHost && (
+        <div className="review-form-wrap">
+          <h3 className="review-form-title">Leave a review</h3>
+          <form onSubmit={handleSubmit} className="review-form">
+            <StarPicker value={rating} onChange={setRating} />
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience with this property…"
+              rows={4}
+              className="review-textarea"
+            />
+            {error && <p className="review-error">{error}</p>}
+            <button type="submit" disabled={isPending} className="review-submit">
+              {isPending ? "Submitting…" : "Submit review"}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
@@ -111,9 +113,11 @@ function ReviewsSection({ listingId }: { listingId: string }) {
 export function ListingDetail(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: listing, isLoading, isError } = useListing(id);
   const { toggle, isSaved } = useFavorites();
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const isHost = user?.role === "host";
 
   if (isLoading) return <div className="listing-detail-page"><div className="detail-loading"><Spinner /></div></div>;
 
@@ -240,20 +244,27 @@ export function ListingDetail(): React.JSX.Element {
             </div>
           </div>
 
-          {listing.available && (
-            <Link to={`/book/${listing.id}`} className="detail-action-button">
-              Reserve · {numeral(listing.price).format("$0")}/night
-            </Link>
+          {isHost ? (
+            <div className="host-preview-banner">
+              You are viewing this listing as a host. Booking is only available to guests.
+            </div>
+          ) : (
+            <>
+              {listing.available && (
+                <Link to={`/book/${listing.id}`} className="detail-action-button">
+                  Reserve · {numeral(listing.price).format("$0")}/night
+                </Link>
+              )}
+              <Link to="/bookings" className="guest-section-link">
+                View my bookings
+              </Link>
+            </>
           )}
-
-          <Link to="/bookings" className="guest-section-link">
-            View my bookings
-          </Link>
         </div>
       </div>
 
       <div className="detail-container">
-        <ReviewsSection listingId={listing.id} />
+        <ReviewsSection listingId={listing.id} isHost={isHost} />
       </div>
 
       {/* ── Lightbox ── */}

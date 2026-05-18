@@ -3,8 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { listingService } from "../../../lib/apiService";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { useStore } from "../../../store/StoreContext";
-import type { ExtendedListing } from "../../../lib/api";
 import toast from "react-hot-toast";
+
+interface UpdatePayload {
+  id: string;
+  fields: {
+    title:       string;
+    description: string;
+    location:    string;
+    price:       number;
+    guests:      number;
+    type:        string;
+    amenities:   string[];
+  };
+  photos?:        File[];
+  replacePhotos?: boolean;
+}
 
 export function useUpdateListing() {
   const qc       = useQueryClient();
@@ -13,32 +27,21 @@ export function useUpdateListing() {
   const { dispatch } = useStore();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ExtendedListing>; photos?: File[] }) =>
-      listingService.update(id, data as Parameters<typeof listingService.update>[1]),
+    mutationFn: ({ id, fields, photos, replacePhotos }: UpdatePayload) =>
+      listingService.update(id, fields, photos, replacePhotos),
 
-    onMutate: async ({ id, data }) => {
-      await qc.cancelQueries({ queryKey: ["listing", id] });
-      const previous = qc.getQueryData<ExtendedListing>(["listing", id]);
-      qc.setQueryData<ExtendedListing>(["listing", id], (old) => old ? { ...old, ...data } : old);
-      return { previous, id };
-    },
-
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(["listing", ctx.id], ctx.previous);
+    onError: () => {
       toast.error("Failed to update listing");
     },
 
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["listings", "mine", user?.id] });
+      qc.invalidateQueries({ queryKey: ["listing", vars.id] });
       dispatch({
         type: "ADD_NOTIFICATION",
-        payload: { message: `Listing "${(vars.data as ExtendedListing).title ?? "your listing"}" was updated.`, type: "success" },
+        payload: { message: `Listing "${vars.fields.title}" was updated.`, type: "success" },
       });
-      navigate("/host");
-    },
-
-    onSettled: (_data, _err, { id }) => {
-      qc.invalidateQueries({ queryKey: ["listing", id] });
+      navigate("/host/listings");
     },
   });
 }

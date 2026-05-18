@@ -70,7 +70,7 @@ const options: swaggerJsdoc.Options = {
             location: { type: "string", example: "New York, NY" },
             price: { type: "number", example: 100.00 },
             guests: { type: "integer", example: 4 },
-            type: { type: "string", enum: ["APARTMENT", "HOUSE", "ROOM", "OTHER"], example: "APARTMENT" },
+            type: { type: "string", enum: ["APARTMENT", "HOUSE", "VILLA", "OTHER"], example: "APARTMENT" },
             amenities: { type: "array", items: { type: "string" }, example: ["WiFi", "Kitchen", "Pool"] },
             host: {
               type: "object",
@@ -93,7 +93,7 @@ const options: swaggerJsdoc.Options = {
             location: { type: "string", example: "New York, NY" },
             price: { type: "number", minimum: 0.01, example: 100.00 },
             guests: { type: "integer", minimum: 1, example: 4 },
-            type: { type: "string", enum: ["APARTMENT", "HOUSE", "ROOM", "OTHER"], example: "APARTMENT" },
+            type: { type: "string", enum: ["APARTMENT", "HOUSE", "VILLA", "OTHER"], example: "APARTMENT" },
             amenities: { type: "array", items: { type: "string" }, example: ["WiFi", "Kitchen", "Pool"] },
           },
         },

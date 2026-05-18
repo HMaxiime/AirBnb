@@ -91,7 +91,7 @@ model listingPhoto {
 enum listingType {
   APARTMENT
   HOUSE
-  ROOM
+  VILLA
   OTHER
 }
 

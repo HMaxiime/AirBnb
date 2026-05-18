@@ -15,8 +15,6 @@ export function HostDashboard() {
   const avgRating = listings.length
     ? (listings.reduce((s, l) => s + l.rating, 0) / listings.length).toFixed(2)
     : "–";
-  const pendingCount = bookings.filter((b) => b.status === "pending").length;
-
   return (
     <DashboardLayout>
       <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
@@ -85,7 +83,7 @@ export function HostDashboard() {
         )}
 
         {/* Quick actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
             to="/host/listings"
             className="bg-white border border-[#ebebeb] rounded-2xl p-5 hover:border-gray-300 transition-colors group"
@@ -96,22 +94,6 @@ export function HostDashboard() {
             <p className="text-xs text-gray-400 mt-0.5">
               {listings.length} propert{listings.length === 1 ? "y" : "ies"}
             </p>
-          </Link>
-          <Link
-            to="/host/bookings"
-            className="bg-white border border-[#ebebeb] rounded-2xl p-5 hover:border-gray-300 transition-colors group relative"
-          >
-            <p className="text-sm font-semibold text-gray-900 group-hover:text-[#ff5a5f] transition-colors">
-              Pending Requests
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {pendingCount} awaiting response
-            </p>
-            {pendingCount > 0 && (
-              <span className="absolute top-4 right-4 bg-[#ff5a5f] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {pendingCount}
-              </span>
-            )}
           </Link>
           <Link
             to="/host/reserved"

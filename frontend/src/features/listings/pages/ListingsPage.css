@@ -12,20 +12,20 @@
   padding: 10px 14px;
   margin-bottom: 16px;
   background: var(--surface);
-  border: 1.5px solid #e0d7ff;
+  border: 1.5px solid #fecaca;
   border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.07);
+  box-shadow: 0 2px 12px rgba(255, 90, 95, 0.07);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .ai-search-bar:focus-within {
-  border-color: #7c3aed;
-  box-shadow: 0 2px 16px rgba(124, 58, 237, 0.15);
+  border-color: #ff5a5f;
+  box-shadow: 0 2px 16px rgba(255, 90, 95, 0.15);
 }
 
 .ai-search-icon {
   font-size: 16px;
-  color: #7c3aed;
+  color: #ff5a5f;
   flex-shrink: 0;
 }
 
@@ -44,7 +44,7 @@
 
 .ai-submit-btn {
   padding: 6px 16px;
-  background: #7c3aed;
+  background: #ff5a5f;
   color: white;
   border: none;
   border-radius: 8px;
@@ -56,32 +56,32 @@
   flex-shrink: 0;
 }
 
-.ai-submit-btn:hover:not(:disabled) { background: #6d28d9; }
+.ai-submit-btn:hover:not(:disabled) { background: #e0474c; }
 .ai-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .ai-clear-btn {
   padding: 6px 14px;
   background: none;
-  border: 1px solid #e0d7ff;
+  border: 1px solid #fecaca;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #7c3aed;
+  color: #ff5a5f;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
   flex-shrink: 0;
 }
 
-.ai-clear-btn:hover { background: #f5f3ff; }
+.ai-clear-btn:hover { background: #fff5f5; }
 
 .ai-result-banner {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 14px;
-  background: #f5f3ff;
-  border: 1px solid #e0d7ff;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
   border-radius: 10px;
   margin-bottom: 14px;
 }
@@ -89,7 +89,7 @@
 .ai-result-label {
   font-size: 13px;
   font-weight: 600;
-  color: #7c3aed;
+  color: #ff5a5f;
 }
 
 .ai-tags {
@@ -102,9 +102,9 @@
   font-size: 12px;
   padding: 3px 10px;
   background: white;
-  border: 1px solid #e0d7ff;
+  border: 1px solid #fecaca;
   border-radius: 20px;
-  color: #5b21b6;
+  color: #e0474c;
   font-weight: 500;
 }
 

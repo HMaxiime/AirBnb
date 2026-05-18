@@ -59,6 +59,9 @@ export function HostListingsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
+                    <Link to={`/listings/${l.id}`} className="text-xs border border-[#ff5a5f] text-[#ff5a5f] px-3 py-1.5 rounded-lg hover:bg-[#fff5f5]">
+                      View
+                    </Link>
                     <Link to={`/host/edit/${l.id}`} className="text-xs border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">
                       Edit
                     </Link>

@@ -6,12 +6,12 @@
   width: 54px;
   height: 54px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  background: linear-gradient(135deg, #ff5a5f, #e0474c);
   color: white;
   border: none;
   font-size: 22px;
   cursor: pointer;
-  box-shadow: 0 4px 24px rgba(124, 58, 237, 0.45);
+  box-shadow: 0 4px 24px rgba(255, 90, 95, 0.45);
   z-index: 1000;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s;
   display: flex;
@@ -22,7 +22,7 @@
 
 .ai-fab:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 32px rgba(124, 58, 237, 0.55);
+  box-shadow: 0 6px 32px rgba(255, 90, 95, 0.55);
 }
 
 .ai-fab--open {
@@ -76,7 +76,7 @@
 .ai-float-title {
   font-size: 16px;
   font-weight: 700;
-  color: #7c3aed;
+  color: #ff5a5f;
   display: block;
 }
 
@@ -107,13 +107,13 @@
   min-width: 0;
 }
 
-.ai-float-input:focus { border-color: #7c3aed; }
+.ai-float-input:focus { border-color: #ff5a5f; }
 .ai-float-input::placeholder { color: var(--text-muted); font-size: 12px; }
 .ai-float-input:disabled { opacity: 0.6; }
 
 .ai-float-submit {
   padding: 9px 18px;
-  background: #7c3aed;
+  background: #ff5a5f;
   color: white;
   border: none;
   border-radius: 10px;
@@ -129,7 +129,7 @@
   justify-content: center;
 }
 
-.ai-float-submit:hover:not(:disabled) { background: #6d28d9; }
+.ai-float-submit:hover:not(:disabled) { background: #e0474c; }
 .ai-float-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Spinner ── */
@@ -152,16 +152,16 @@
   gap: 6px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
-  background: #faf8ff;
+  background: #fff5f5;
 }
 
 .ai-float-tag {
   font-size: 11px;
   padding: 3px 10px;
   background: white;
-  border: 1px solid #e0d7ff;
+  border: 1px solid #fecaca;
   border-radius: 20px;
-  color: #5b21b6;
+  color: #e0474c;
   font-weight: 500;
 }
 
@@ -176,8 +176,8 @@
 }
 
 .ai-float-loading .ai-float-spinner {
-  border-color: #e0d7ff;
-  border-top-color: #7c3aed;
+  border-color: #fecaca;
+  border-top-color: #ff5a5f;
 }
 
 /* ── Results ── */
@@ -257,7 +257,7 @@
 
 .ai-float-result-price {
   font-size: 12px;
-  color: #7c3aed;
+  color: #ff5a5f;
   font-weight: 700;
   margin: 3px 0 0;
 }

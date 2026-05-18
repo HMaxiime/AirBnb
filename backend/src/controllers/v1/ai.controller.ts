@@ -19,7 +19,7 @@ If NO — the query is about something unrelated (food, weather, people, events,
 
 If YES — extract search filters and return a JSON object with only the fields that apply:
 - location: string (city, area, or neighborhood mentioned)
-- type: one of APARTMENT, HOUSE, ROOM, OTHER
+- type: one of APARTMENT, HOUSE, VILLA, OTHER
 - guests: number (number of people or guests)
 - maxPrice: number (maximum price per night in USD)
 - amenities: array of strings chosen strictly from the list below
@@ -45,7 +45,7 @@ Type mapping:
 - villa, mansion, cottage, chalet, bungalow → HOUSE
 - cabin, studio, loft → OTHER
 - apartment, condo, flat, penthouse → APARTMENT
-- room, private room, shared room, bed → ROOM
+- room, private room, shared room, bed → OTHER
 
 Return ONLY valid JSON. No explanation. No markdown. No extra text.
 Example: {{"location": "Paris", "type": "APARTMENT", "guests": 2, "maxPrice": 150, "amenities": ["WiFi", "Pool"]}}
