@@ -34,9 +34,9 @@ export function useCreateBooking() {
       qc.invalidateQueries({ queryKey: ["listings"] });
       dispatch({
         type: "ADD_NOTIFICATION",
-        payload: { message: `Booking request sent for "${booking.listingTitle}". Waiting for host approval.`, type: "success" },
+        payload: { message: `Booking confirmed for "${booking.listingTitle}"!`, type: "success" },
       });
-      toast.success("Booking request sent!");
+      toast.success("Booking confirmed!");
       navigate("/bookings");
     },
 

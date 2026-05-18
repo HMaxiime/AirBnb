@@ -14,7 +14,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending:   "Awaiting approval",
+  pending:   "Pending",
   confirmed: "Confirmed",
   cancelled: "Cancelled",
 };
@@ -145,7 +145,7 @@ export function MyBookingsPage(): React.JSX.Element {
             <div key={status}>
               <div className="flex items-center gap-2 mb-3">
                 <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
-                  {status === "confirmed" ? "Confirmed" : status === "pending" ? "Pending Approval" : "Cancelled"}
+                  {status === "confirmed" ? "Confirmed" : status === "pending" ? "Pending" : "Cancelled"}
                 </h2>
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[status]}`}>
                   {group.length}

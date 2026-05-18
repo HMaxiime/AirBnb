@@ -184,7 +184,7 @@ export const createBooking = async (
           checkIn:    parsedCheckIn,
           checkOut:   parsedCheckOut,
           totalPrice: data.totalPrice,
-          status:     "PENDING",
+          status:     "CONFIRMED",
         },
         include: bookingInclude,
       });

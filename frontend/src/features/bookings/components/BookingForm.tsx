@@ -54,7 +54,6 @@ export function BookingForm({ listing }: Props) {
       guests: s1.guests,
       pricePerNight: listing.price,
       totalPrice: total,
-      status: "pending",
     });
   };
 
