@@ -26,7 +26,6 @@ export function useDeleteListing() {
 
     onSuccess: () => {
       toast.success("Listing deleted");
-      qc.invalidateQueries({ queryKey: ["listings"] });
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: key }),

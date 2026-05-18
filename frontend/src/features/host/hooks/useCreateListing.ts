@@ -17,7 +17,6 @@ export function useCreateListing() {
 
     onSuccess: (listing) => {
       qc.invalidateQueries({ queryKey: ["listings", "mine", user?.id] });
-      qc.invalidateQueries({ queryKey: ["listings"] });
       dispatch({
         type: "ADD_NOTIFICATION",
         payload: { message: `Listing "${listing.title}" was created successfully.`, type: "success" },
