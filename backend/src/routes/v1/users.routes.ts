@@ -8,7 +8,9 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  banUser,
 } from "../../controllers/users.controller.js";
+import { requireAdmin } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
@@ -171,5 +173,6 @@ router.post("/", authenticate, strictLimiter, createUser);
 router.put("/:id", authenticate, strictLimiter, updateUser);
 // delete: handles delete.
 router.delete("/:id", authenticate, strictLimiter, deleteUser);
+router.patch("/:id/ban", authenticate, requireAdmin, strictLimiter, banUser);
 
 export default router;

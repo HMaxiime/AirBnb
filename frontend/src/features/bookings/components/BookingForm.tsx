@@ -16,7 +16,6 @@ export function BookingForm({ listing }: Props) {
   const [step, setStep] = useState(0);
   const [s1, setS1] = useState<Step1Data | null>(null);
   const [s2, setS2] = useState<Step2Data | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const { user } = useAuth();
   const { mutate: createBooking, isPending } = useCreateBooking();
 
@@ -26,17 +25,6 @@ export function BookingForm({ listing }: Props) {
 
   const nights = s1 ? Math.max(1, differenceInCalendarDays(new Date(s1.checkOut), new Date(s1.checkIn))) : 1;
   const total = listing.price * nights;
-
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      form2.setError("name", { message: "Photo must be under 5 MB" });
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPhotoPreview(url);
-  };
 
   const onConfirm = () => {
     if (!s1 || !s2 || !user) return;
@@ -115,12 +103,6 @@ export function BookingForm({ listing }: Props) {
               {form2.formState.errors[field] && <p className="text-red-500 text-xs mt-1">{form2.formState.errors[field]?.message}</p>}
             </div>
           ))}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Profile photo (optional, max 5 MB)</label>
-            <input type="file" accept="image/*" onChange={handlePhoto}
-              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-[#ff5a5f] file:text-white hover:file:bg-[#e0474c]" />
-            {photoPreview && <img src={photoPreview} alt="Preview" className="mt-2 w-20 h-20 rounded-full object-cover border-2 border-[#ff5a5f]" />}
-          </div>
           <div className="flex gap-3">
             <button type="button" onClick={() => setStep(0)} className="flex-1 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50">Back</button>
             <button type="submit" className="flex-1 py-3 bg-[#ff5a5f] text-white rounded-lg font-semibold hover:bg-[#e0474c]">Continue</button>

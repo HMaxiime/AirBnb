@@ -348,9 +348,14 @@ export async function patchListingStatus(req: AuthRequest, res: Response, next: 
   try {
     const id     = req.params["id"] as string;
     const status = (req.body["status"] as string | undefined)?.toUpperCase();
+    const reason = (req.body["reason"] as string | undefined)?.trim() ?? "";
 
     if (!["APPROVED", "REJECTED", "PENDING"].includes(status ?? "")) {
       return res.status(400).json({ error: "status must be APPROVED, REJECTED, or PENDING" });
+    }
+
+    if (status === "REJECTED" && !reason) {
+      return res.status(400).json({ error: "A reason is required when rejecting a listing" });
     }
 
     const listing = await prisma.listing.findUnique({ where: { id } });
@@ -365,18 +370,18 @@ export async function patchListingStatus(req: AuthRequest, res: Response, next: 
       },
     });
 
-    // Notify host of approval or rejection.
+    // Notify host of approval or rejection with the admin's reason.
     if (status === "APPROVED") {
       sendEmail(
         updated.host.email,
         "Your listing has been approved!",
-        listingApprovedEmail(updated.host.name, updated.title),
+        listingApprovedEmail(updated.host.name, updated.title, reason),
       ).catch(() => {});
     } else if (status === "REJECTED") {
       sendEmail(
         updated.host.email,
         "Your listing was not approved",
-        listingRejectedEmail(updated.host.name, updated.title),
+        listingRejectedEmail(updated.host.name, updated.title, reason),
       ).catch(() => {});
     }
 
@@ -403,3 +408,36 @@ export async function listingstatus(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+// ─── GET /listings/moderation-history — admin only ────────────────────────────
+// Returns approved and rejected listing counts grouped by month for the last 24 months.
+export async function getModerationHistory(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const rows = await prisma.$queryRaw<{ month: string; status: string; count: bigint }[]>`
+      SELECT
+        TO_CHAR("updatedAt", 'YYYY-MM') AS month,
+        status,
+        COUNT(*)::int                  AS count
+      FROM "Listing"
+      WHERE status IN ('APPROVED', 'REJECTED')
+      GROUP BY month, status
+      ORDER BY month DESC
+      LIMIT 48
+    `;
+
+    // Pivot into { month, approved, rejected } rows
+    const map = new Map<string, { month: string; approved: number; rejected: number }>();
+    for (const r of rows) {
+      if (!map.has(r.month)) map.set(r.month, { month: r.month, approved: 0, rejected: 0 });
+      const slot = map.get(r.month)!;
+      if (r.status === "APPROVED") slot.approved = Number(r.count);
+      if (r.status === "REJECTED") slot.rejected = Number(r.count);
+    }
+
+    const history = Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
+    res.json(history);
+  } catch (error) {
+    next(error);
+  }
+}
+

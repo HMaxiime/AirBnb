@@ -2,7 +2,10 @@ import type { Request, Response ,NextFunction } from "express";
 import type { Prisma } from "@prisma/client";
 import bcrypt from "bcrypt";
 import prisma from "../config/prisma.js";
-import {createUserSchema, updateUserSchema } from "../validators/users.validators.js";  
+import {createUserSchema, updateUserSchema } from "../validators/users.validators.js";
+import type { AuthRequest } from "../middlewares/auth.middleware.js";
+import { sendEmail } from "../config/email.js";
+import { accountBannedEmail, accountUnbannedEmail } from "../templates/emails.js";  
 
 // Helper to parse and validate integer ID from request params
 function parseUserId(idParam: string): string | null {
@@ -18,7 +21,7 @@ export async function getAllUsers(req: Request, res: Response, next: NextFunctio
     const skip = (page - 1) * limit;
 
     const [users, total] = await Promise.all([
-      prisma.user.findMany({ skip, take: limit, select: { id: true, name: true, email: true, username: true, role: true, createdAt: true } }),
+      prisma.user.findMany({ skip, take: limit, select: { id: true, name: true, email: true, username: true, role: true, banned: true, createdAt: true } }),
       prisma.user.count(),
     ]);
 
@@ -140,6 +143,53 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
 
     await prisma.user.delete({ where: { id } });
     res.status(204).send(); // 204 No Content
+  } catch (error) {
+    next(error);
+  }
+}
+
+// PATCH /users/:id/ban — admin only: ban (with reason) or unban a user
+export async function banUser(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const id     = req.params["id"] as string;
+    const reason = (req.body?.reason as string | undefined)?.trim() ?? "";
+
+    if (!id) return res.status(400).json({ error: "Invalid user id" });
+
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return res.status(404).json({ error: "User not found" });
+    if (target.role === "ADMIN") return res.status(403).json({ error: "Cannot ban an admin" });
+
+    const isBanning = !target.banned;
+
+    if (isBanning && !reason) {
+      return res.status(400).json({ error: "A reason is required when banning a user" });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data:  {
+        banned:    isBanning,
+        banReason: isBanning ? reason : null,
+      },
+      select: { id: true, name: true, email: true, role: true, banned: true, banReason: true },
+    });
+
+    if (isBanning) {
+      sendEmail(
+        target.email,
+        "Your account has been suspended",
+        accountBannedEmail(target.name, reason),
+      ).catch(() => {});
+    } else {
+      sendEmail(
+        target.email,
+        "Your account has been reinstated",
+        accountUnbannedEmail(target.name),
+      ).catch(() => {});
+    }
+
+    res.json(updated);
   } catch (error) {
     next(error);
   }

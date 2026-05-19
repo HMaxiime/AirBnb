@@ -15,7 +15,7 @@ const NAV: Record<UserRole, NavItem[]> = {
   host: [
     { label: "Overview", href: "/host", exact: true },
     { label: "My Listings", href: "/host/listings" },
-    { label: "Pending Requests", href: "/host/bookings" },
+    { label: "Bookings", href: "/host/bookings" },
     { label: "Reserved", href: "/host/reserved" },
     { label: "Settings", href: "/host/settings" },
   ],
@@ -36,7 +36,7 @@ const ROLE_LABEL: Record<UserRole, string> = {
 const ROLE_COLOR: Record<UserRole, string> = {
   guest: "text-sky-600",
   host: "text-[#ff5a5f]",
-  admin: "text-violet-600",
+  admin: "text-[#ff5a5f]",
 };
 
 function getInitials(name: string): string {

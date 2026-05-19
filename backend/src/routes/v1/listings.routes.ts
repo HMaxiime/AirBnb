@@ -10,6 +10,7 @@ import {
   deletePhoto,
   listingstatus,
   patchListingStatus,
+  getModerationHistory,
 } from "../../controllers/listings.controller.js";
 import { authenticate, requireHost, requireAdmin } from "../../middlewares/auth.middleware.js";
 import { strictLimiter } from "../../middlewares/rateLimiter.js";
@@ -181,9 +182,10 @@ const router = Router();
 // Public read routes do not need authentication.
 // Write routes are protected by host auth and the strict limiter.
 
-router.get("/",          getAllListings);   // public
-router.get("/status",    listingstatus);    // public
-router.get("/:id",       getListingById);  // public
+router.get("/",                    getAllListings);         // public
+router.get("/status",              listingstatus);          // public
+router.get("/moderation-history",  authenticate, requireAdmin, getModerationHistory); // admin
+router.get("/:id",                 getListingById);         // public — must be last GET
 
 // Create listing — accepts up to 10 images under the "photos" multipart field.
 router.post(

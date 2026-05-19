@@ -11,6 +11,7 @@ export interface BackendUser {
   username: string;
   phone?: string;
   role: "HOST" | "GUEST" | "ADMIN";
+  banned: boolean;
   avatar?: string;
   createdAt: string;
   updatedAt?: string;
@@ -280,8 +281,15 @@ export const listingService = {
     return data.data.map(adaptListing);
   },
 
-  async setStatus(id: string, status: "APPROVED" | "REJECTED"): Promise<void> {
-    await apiClient.patch(`/listings/${id}/status`, { status });
+  async setStatus(id: string, status: "APPROVED" | "REJECTED", reason?: string): Promise<void> {
+    await apiClient.patch(`/listings/${id}/status`, { status, ...(reason && { reason }) });
+  },
+
+  async getModerationHistory(): Promise<{ month: string; approved: number; rejected: number }[]> {
+    const { data } = await apiClient.get<{ month: string; approved: number; rejected: number }[]>(
+      "/listings/moderation-history",
+    );
+    return data;
   },
 };
 
@@ -359,9 +367,14 @@ export const userService = {
       name:      u.name,
       email:     u.email,
       role:      u.role.toLowerCase() as "host" | "guest" | "admin",
-      banned:    false,
+      banned:    u.banned ?? false,
       createdAt: u.createdAt,
     }));
+  },
+
+  async ban(userId: string, reason?: string): Promise<{ banned: boolean }> {
+    const { data } = await apiClient.patch<{ banned: boolean }>(`/users/${userId}/ban`, { reason });
+    return data;
   },
 };
 

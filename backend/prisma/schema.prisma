@@ -16,6 +16,8 @@ model User {
   avatar           String? // optional — not all users have a profile picture
   avatarPublicId   String? // optional — only needed if the user has an avatar
   role             Role      @default(GUEST)
+  banned           Boolean   @default(false)
+  banReason        String?
   resetToken       String?
   resetTokenExpiry DateTime?
   createdAt        DateTime  @default(now())

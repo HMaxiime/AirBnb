@@ -64,10 +64,14 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
+    if (user.banned) {
+      return res.status(403).json({ error: "Your account has been banned. Please contact support." });
+    }
+
     const token = jwt.sign(
       { userId: user.id, role: user.role },
       process.env.JWT_SECRET!,
-      { expiresIn: "1h" },
+      { expiresIn: "7d" },
     );
 
     const { password: _, ...userWithoutPassword } = user;

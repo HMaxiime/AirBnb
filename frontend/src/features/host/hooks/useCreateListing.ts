@@ -24,6 +24,13 @@ export function useCreateListing() {
       navigate("/host");
     },
 
-    onError: () => toast.error("Failed to create listing"),
+    onError: (err: unknown) => {
+      const msg =
+        (err as any)?.response?.data?.error ||
+        (err as any)?.response?.data?.errors?.[0]?.message ||
+        (err as any)?.message ||
+        "Failed to create listing";
+      toast.error(msg);
+    },
   });
 }

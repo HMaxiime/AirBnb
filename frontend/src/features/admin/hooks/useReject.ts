@@ -5,10 +5,12 @@ import toast from "react-hot-toast";
 export function useReject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => listingService.setStatus(id, "REJECTED"),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      listingService.setStatus(id, "REJECTED", reason),
     onSuccess: () => {
       toast.success("Listing rejected");
       qc.invalidateQueries({ queryKey: ["listings", "pending"] });
+      qc.invalidateQueries({ queryKey: ["moderation-history"] });
     },
     onError: () => toast.error("Failed to reject listing"),
   });

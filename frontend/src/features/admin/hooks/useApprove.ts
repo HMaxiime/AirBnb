@@ -9,6 +9,7 @@ export function useApprove() {
     onSuccess: () => {
       toast.success("Listing approved");
       qc.invalidateQueries({ queryKey: ["listings", "pending"] });
+      qc.invalidateQueries({ queryKey: ["moderation-history"] });
     },
     onError: () => toast.error("Failed to approve listing"),
   });

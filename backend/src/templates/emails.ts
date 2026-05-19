@@ -107,10 +107,13 @@ export function listingSubmittedEmail(hostName: string, listingTitle: string): s
   `);
 }
 
-export function listingApprovedEmail(hostName: string, listingTitle: string): string {
+export function listingApprovedEmail(hostName: string, listingTitle: string, reason: string): string {
   return base(`
     <h2 style="color: #16a34a;">Listing Approved!</h2>
     <p>Hi ${hostName}, your listing <strong>"${listingTitle}"</strong> has been approved and is now live for guests to book.</p>
+    <div style="background:#f0fdf4; border-left:4px solid #16a34a; padding:12px 16px; border-radius:4px; margin:16px 0;">
+      <p style="margin:0; font-size:13px; color:#15803d;"><strong>Admin note:</strong> ${reason}</p>
+    </div>
     <a href="${process.env.FRONTEND_URL ?? "http://localhost:5173"}/host/listings"
        style="display:inline-block; background:#ff5a5f; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin-top:8px;">
       View My Listings
@@ -118,11 +121,36 @@ export function listingApprovedEmail(hostName: string, listingTitle: string): st
   `);
 }
 
-export function listingRejectedEmail(hostName: string, listingTitle: string): string {
+export function accountBannedEmail(userName: string, reason: string): string {
+  return base(`
+    <h2 style="color:#e0474c;">Your account has been suspended</h2>
+    <p>Hi ${userName}, your Airbnb account has been suspended by our moderation team.</p>
+    <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:12px 16px; border-radius:4px; margin:16px 0;">
+      <p style="margin:0; font-size:13px; color:#dc2626;"><strong>Reason:</strong> ${reason}</p>
+    </div>
+    <p style="color:#555;">If you believe this is a mistake or would like to appeal, please contact our support team.</p>
+  `);
+}
+
+export function accountUnbannedEmail(userName: string): string {
+  return base(`
+    <h2 style="color:#16a34a;">Your account has been reinstated</h2>
+    <p>Hi ${userName}, your Airbnb account has been reinstated and you can log in again.</p>
+    <a href="${process.env.FRONTEND_URL ?? "http://localhost:5173"}/login"
+       style="display:inline-block; background:#ff5a5f; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin-top:8px;">
+      Log In
+    </a>
+  `);
+}
+
+export function listingRejectedEmail(hostName: string, listingTitle: string, reason: string): string {
   return base(`
     <h2>Listing Not Approved</h2>
     <p>Hi ${hostName}, unfortunately your listing <strong>"${listingTitle}"</strong> was not approved at this time.</p>
-    <p style="color:#555;">Please review your listing details and resubmit. If you believe this is an error, please contact support.</p>
+    <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:12px 16px; border-radius:4px; margin:16px 0;">
+      <p style="margin:0; font-size:13px; color:#dc2626;"><strong>Reason:</strong> ${reason}</p>
+    </div>
+    <p style="color:#555;">Please review your listing and resubmit after making the necessary changes.</p>
     <a href="${process.env.FRONTEND_URL ?? "http://localhost:5173"}/host/listings"
        style="display:inline-block; background:#ff5a5f; color:white; padding:12px 24px; text-decoration:none; border-radius:8px; font-weight:600; margin-top:8px;">
       Edit My Listings

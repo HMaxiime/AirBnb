@@ -16,6 +16,7 @@ export function errorHandler(
 
   // Prisma known errors map common database problems to status codes.
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    console.error(`Prisma error ${err.code}:`, err.message, err.meta);
     switch (err.code) {
       case "P2002":
         return res
@@ -26,10 +27,15 @@ export function errorHandler(
       case "P2003":
         return res.status(400).json({ error: "Related record does not exist" });
       default:
-        return res.status(500).json({ error: "Database error" });
+        return res.status(500).json({ error: `Database error (${err.code}): ${err.message}` });
     }
   }
 
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    console.error("Prisma validation error:", err.message);
+    return res.status(400).json({ error: err.message });
+  }
+
   console.error(err);
-  res.status(500).json({ error: "Something went wrong" });
+  res.status(500).json({ error: (err as any)?.message ?? "Something went wrong" });
 }

@@ -30,8 +30,13 @@ export function useUpdateListing() {
     mutationFn: ({ id, fields, photos, replacePhotos }: UpdatePayload) =>
       listingService.update(id, fields, photos, replacePhotos),
 
-    onError: () => {
-      toast.error("Failed to update listing");
+    onError: (err: unknown) => {
+      const msg =
+        (err as any)?.response?.data?.error ||
+        (err as any)?.response?.data?.errors?.[0]?.message ||
+        (err as any)?.message ||
+        "Failed to update listing";
+      toast.error(msg);
     },
 
     onSuccess: (_data, vars) => {
