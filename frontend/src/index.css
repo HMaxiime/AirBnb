@@ -28,17 +28,86 @@ html.dark {
 }
 
 /* ── Global Tailwind dark overrides ── */
+
+/* Standard grays */
 html.dark .bg-white          { background-color: var(--surface); }
 html.dark .bg-gray-50        { background-color: var(--surface-2); }
+html.dark .bg-gray-100       { background-color: var(--surface-2); }
 html.dark .text-gray-900     { color: var(--text); }
 html.dark .text-gray-800     { color: var(--text); }
 html.dark .text-gray-700     { color: var(--text-muted); }
 html.dark .text-gray-600     { color: var(--text-muted); }
 html.dark .text-gray-500     { color: var(--text-muted); }
 html.dark .text-gray-400     { color: var(--text-light); }
+html.dark .text-gray-300     { color: var(--text-light); }
 html.dark .border-gray-200   { border-color: var(--border); }
 html.dark .border-gray-300   { border-color: var(--border-2); }
 html.dark .divide-gray-200   { border-color: var(--border); }
+html.dark .hover\:bg-gray-50:hover { background-color: var(--surface-2); }
+html.dark .hover\:bg-gray-100:hover { background-color: var(--surface-2); }
+
+/* Custom hex backgrounds used as page/card surfaces */
+html.dark .bg-\[\#f7f7f7\]  { background-color: var(--bg); }
+html.dark .bg-\[\#ebebeb\]  { background-color: var(--surface-2); }
+html.dark .bg-\[\#f5f5f5\]  { background-color: var(--surface-2); }
+html.dark .bg-\[\#f0f0f0\]  { background-color: var(--surface-2); }
+
+/* Custom hex borders */
+html.dark .border-\[\#ebebeb\] { border-color: var(--border); }
+html.dark .border-\[\#f5f5f5\] { border-color: var(--border); }
+html.dark .border-\[\#dddddd\] { border-color: var(--border-2); }
+
+/* Coloured tint backgrounds (badges, banners, alerts) */
+html.dark .bg-green-100    { background-color: rgba(34, 197, 94,  0.15); }
+html.dark .bg-emerald-100  { background-color: rgba(16, 185, 129, 0.15); }
+html.dark .bg-red-100      { background-color: rgba(239, 68,  68,  0.15); }
+html.dark .bg-rose-100     { background-color: rgba(244, 63,  94,  0.15); }
+html.dark .bg-yellow-100   { background-color: rgba(234, 179, 8,   0.15); }
+html.dark .bg-amber-100    { background-color: rgba(245, 158, 11,  0.15); }
+html.dark .bg-sky-100      { background-color: rgba(14,  165, 233, 0.15); }
+html.dark .bg-blue-100     { background-color: rgba(59,  130, 246, 0.15); }
+html.dark .bg-violet-100   { background-color: rgba(139, 92,  246, 0.15); }
+html.dark .bg-gray-100     { background-color: var(--surface-2); }
+
+/* Custom hex tints */
+html.dark .bg-\[\#fff5f5\] { background-color: rgba(255, 90, 95, 0.12); }
+html.dark .bg-\[\#fff0f0\] { background-color: rgba(255, 90, 95, 0.12); }
+html.dark .bg-\[\#fef2f2\] { background-color: rgba(239, 68, 68,  0.12); }
+html.dark .bg-\[\#f0fdf4\] { background-color: rgba(34, 197, 94,  0.10); }
+html.dark .bg-\[\#faf8ff\] { background-color: rgba(139, 92,  246, 0.10); }
+
+/* Coloured tint borders */
+html.dark .border-red-100      { border-color: rgba(239, 68,  68,  0.3); }
+html.dark .border-emerald-100  { border-color: rgba(16, 185, 129, 0.3); }
+html.dark .border-sky-100      { border-color: rgba(14, 165, 233, 0.3); }
+html.dark .border-amber-100    { border-color: rgba(245, 158, 11, 0.3); }
+html.dark .border-violet-100   { border-color: rgba(139, 92,  246, 0.3); }
+html.dark .border-\[\#fecaca\] { border-color: rgba(239, 68, 68, 0.4); }
+html.dark .border-\[\#e0d7ff\] { border-color: rgba(139, 92, 246, 0.4); }
+
+/* Hover coloured tints */
+html.dark .hover\:bg-red-50:hover    { background-color: rgba(239, 68, 68, 0.1); }
+html.dark .hover\:bg-green-50:hover  { background-color: rgba(34, 197, 94, 0.1); }
+html.dark .hover\:bg-amber-200:hover { background-color: rgba(245, 158, 11, 0.2); }
+html.dark .hover\:bg-violet-200:hover { background-color: rgba(139, 92, 246, 0.2); }
+html.dark .hover\:bg-\[\#fff5f5\]:hover { background-color: rgba(255, 90, 95, 0.1); }
+
+/* Coloured text — keep vivid in dark mode */
+html.dark .text-green-600   { color: #4ade80; }
+html.dark .text-green-700   { color: #4ade80; }
+html.dark .text-emerald-600 { color: #34d399; }
+html.dark .text-emerald-700 { color: #34d399; }
+html.dark .text-red-600     { color: #f87171; }
+html.dark .text-red-700     { color: #f87171; }
+html.dark .text-sky-600     { color: #38bdf8; }
+html.dark .text-sky-700     { color: #38bdf8; }
+html.dark .text-amber-600   { color: #fbbf24; }
+html.dark .text-amber-700   { color: #fbbf24; }
+html.dark .text-violet-600  { color: #a78bfa; }
+html.dark .text-yellow-700  { color: #fde047; }
+html.dark .text-yellow-800  { color: #fde047; }
+
+/* Inputs */
 html.dark input:not([type="range"]):not([type="checkbox"]),
 html.dark textarea,
 html.dark select {
@@ -48,6 +117,11 @@ html.dark select {
 }
 html.dark input::placeholder,
 html.dark textarea::placeholder { color: var(--text-light); }
+
+/* Tables */
+html.dark .hover\:bg-gray-50:hover { background-color: var(--surface-2) !important; }
+html.dark table thead tr          { border-color: var(--border); }
+html.dark table tbody tr          { border-color: var(--border); }
 
 #root {
   width: 100%;

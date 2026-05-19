@@ -20,10 +20,9 @@ const NAV: Record<UserRole, NavItem[]> = {
     { label: "Settings", href: "/host/settings" },
   ],
   admin: [
-    { label: "Overview", href: "/admin", exact: true },
-    { label: "Analytics", href: "/admin/analytics" },
-    { label: "Moderation", href: "/admin/moderation" },
-    { label: "All Bookings", href: "/admin/bookings" },
+    { label: "Overview",     href: "/admin",           exact: true },
+    { label: "Analytics",    href: "/admin/analytics"              },
+    { label: "All Bookings", href: "/admin/bookings"               },
   ],
 };
 

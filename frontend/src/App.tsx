@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import NProgress from "nprogress";
 import { Navbar } from "./shared/components/Navbar";
 import { Footer } from "./shared/components/Footer";
@@ -245,11 +245,7 @@ function App() {
           />
           <Route
             path="/admin/moderation"
-            element={
-              <ProtectedRoute roles={["admin"]}>
-                <ModerationQueue />
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/admin/bookings" replace />}
           />
           <Route
             path="/admin/bookings"

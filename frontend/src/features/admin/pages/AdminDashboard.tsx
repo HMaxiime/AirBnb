@@ -6,12 +6,13 @@ import { useAdminStats } from "../hooks/useAdminStats";
 import { useAllBookings } from "../hooks/useAllBookings";
 import { useSetRole } from "../hooks/useSetRole";
 import { userService } from "../../../lib/apiService";
+import { DualLineChart, GroupedBarChart, Sparkline } from "../components/Charts";
 import type { MockUser } from "../../../lib/api";
 import type { Booking } from "../../../lib/api";
 import { Spinner } from "../../../shared/components/Spinner";
 import { AdminLayout } from "../components/AdminLayout";
 
-// ── Chart helpers ─────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 function last6Months() {
   const now = new Date();
@@ -20,78 +21,63 @@ function last6Months() {
     return {
       key:      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
       label:    d.toLocaleString("default", { month: "short" }),
-      revenue:  0,
-      bookings: 0,
-      users:    0,
+      revenue:  0, bookings: 0, users: 0,
     };
   });
 }
 
-function buildChartData(bookings: Booking[], users: MockUser[]) {
+function weekDays() {
+  return ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((label) => ({
+    label, confirmed: 0, cancelled: 0,
+  }));
+}
+
+function buildData(bookings: Booking[], users: MockUser[]) {
   const months = last6Months();
+  const days   = weekDays();
   for (const b of bookings) {
-    const key  = (b.createdAt ?? "").slice(0, 7);
-    const slot = months.find((m) => m.key === key);
-    if (!slot) continue;
-    slot.bookings++;
-    if (b.status === "confirmed") slot.revenue += b.totalPrice;
+    const slot = months.find((m) => m.key === (b.createdAt ?? "").slice(0, 7));
+    if (slot) { slot.bookings++; if (b.status === "confirmed") slot.revenue += b.totalPrice; }
+    const dow = new Date(b.createdAt ?? Date.now()).getDay(); // 0=Sun
+    const idx = dow === 0 ? 6 : dow - 1;
+    if (b.status === "confirmed") days[idx].confirmed++;
+    else if (b.status === "cancelled") days[idx].cancelled++;
   }
   for (const u of users) {
-    const key  = (u.createdAt ?? "").slice(0, 7);
-    const slot = months.find((m) => m.key === key);
+    const slot = months.find((m) => m.key === (u.createdAt ?? "").slice(0, 7));
     if (slot) slot.users++;
   }
-  return months;
+  return { months, days };
 }
 
-// ── Mini sparkline bar ────────────────────────────────────────────────────────
+// ── Live indicator ─────────────────────────────────────────────────────────────
 
-function MiniBar({
-  data,
-  valueKey,
-  color,
-  formatVal,
-}: {
-  data: ReturnType<typeof last6Months>;
-  valueKey: "revenue" | "bookings" | "users";
-  color: string;
-  formatVal: (v: number) => string;
-}) {
-  const max = Math.max(...data.map((d) => d[valueKey]), 1);
-  return (
-    <div className="flex items-end gap-1.5 h-16">
-      {data.map((d) => (
-        <div key={d.key} className="flex-1 flex flex-col items-center gap-1 group relative">
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-            {formatVal(d[valueKey])}
-          </div>
-          <div className="w-full rounded-t transition-all"
-            style={{ height: `${Math.max((d[valueKey] / max) * 100, d[valueKey] > 0 ? 8 : 2)}%`, background: d[valueKey] > 0 ? color : "#e5e7eb" }} />
-          <span className="text-[9px] text-gray-400 font-medium">{d.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ── Live indicator ────────────────────────────────────────────────────────────
-
-function LastUpdated({ ts }: { ts: Date }) {
+function LiveBadge({ ts }: { ts: Date }) {
   const [label, setLabel] = useState("just now");
   useEffect(() => {
     const tick = () => {
-      const diff = Math.floor((Date.now() - ts.getTime()) / 1000);
-      setLabel(diff < 10 ? "just now" : diff < 60 ? `${diff}s ago` : `${Math.floor(diff / 60)}m ago`);
+      const s = Math.floor((Date.now() - ts.getTime()) / 1000);
+      setLabel(s < 10 ? "just now" : s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`);
     };
     tick();
     const id = setInterval(tick, 5000);
     return () => clearInterval(id);
   }, [ts]);
   return (
-    <span className="flex items-center gap-1.5 text-xs text-gray-400">
-      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-      Updated {label}
+    <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+      Live · {label}
     </span>
+  );
+}
+
+// ── KPI icon wrappers ─────────────────────────────────────────────────────────
+
+function KpiIcon({ children, bg }: { children: React.ReactNode; bg: string }) {
+  return (
+    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+      {children}
+    </div>
   );
 }
 
@@ -99,29 +85,52 @@ function LastUpdated({ ts }: { ts: Date }) {
 
 export function AdminDashboard(): React.JSX.Element {
   const POLL = 30_000;
-
-  const { data: stats, isLoading: loadingStats, dataUpdatedAt: statsTs }         = useAdminStats();
+  const { data: stats, isLoading: loadingStats, dataUpdatedAt: statsTs }               = useAdminStats();
   const { data: bookings = [], isLoading: loadingBookings, dataUpdatedAt: bookingsTs } = useAllBookings();
   const { data: users = [], isLoading: loadingUsers } = useQuery<MockUser[]>({
-    queryKey:        ["users"],
-    queryFn:         userService.getAll,
-    refetchInterval: POLL,
+    queryKey: ["users"], queryFn: userService.getAll, refetchInterval: POLL,
   });
-
   const { mutate: setRole, isPending: settingRole } = useSetRole();
 
-  const chart        = buildChartData(bookings, users);
-  const totalRevenue = bookings.filter((b) => b.status === "confirmed").reduce((s, b) => s + b.totalPrice, 0);
-  const confirmed    = bookings.filter((b) => b.status === "confirmed").length;
-  const cancelled    = bookings.filter((b) => b.status === "cancelled").length;
-  const confirmedPct = bookings.length ? Math.round((confirmed / bookings.length) * 100) : 0;
-  const lastUpdated  = new Date(Math.max(statsTs ?? 0, bookingsTs ?? 0));
+  const { months, days } = buildData(bookings, users);
+
+  const totalRevenue  = bookings.filter((b) => b.status === "confirmed").reduce((s, b) => s + b.totalPrice, 0);
+  const confirmed     = bookings.filter((b) => b.status === "confirmed").length;
+  const cancelled     = bookings.filter((b) => b.status === "cancelled").length;
+  const confirmedPct  = bookings.length ? Math.round((confirmed / bookings.length) * 100) : 0;
+  const lastUpdated   = new Date(Math.max(statsTs ?? 0, bookingsTs ?? 0));
+
+  const revValues  = months.map((m) => m.revenue);
+  const bkgValues  = months.map((m) => m.bookings);
+  const labels     = months.map((m) => m.label);
+  const weekData   = days.map((d) => ({ label: d.label, a: d.confirmed, b: d.cancelled }));
 
   const kpi = [
-    { label: "Total Revenue",    value: numeral(totalRevenue).format("$0,0"),        sub: "Confirmed bookings",     color: "text-emerald-600", vk: "revenue"  as const, tc: "#22c55e", fmt: (v: number) => numeral(v).format("$0,0") },
-    { label: "Total Bookings",   value: String(stats?.totalBookings ?? bookings.length), sub: `${confirmedPct}% confirmed`, color: "text-sky-600",     vk: "bookings" as const, tc: "#0ea5e9", fmt: (v: number) => String(v) },
-    { label: "Active Listings",  value: String(stats?.totalListings ?? 0),           sub: "Published properties",   color: "text-[#ff5a5f]",  vk: null,                tc: "",        fmt: (v: number) => String(v) },
-    { label: "Registered Users", value: String(stats?.totalUsers ?? users.length),   sub: `${users.filter((u) => u.role === "host").length} hosts`, color: "text-amber-500", vk: "users" as const, tc: "#f59e0b", fmt: (v: number) => String(v) },
+    {
+      label: "Total Revenue", value: numeral(totalRevenue).format("$0,0"),
+      sub: `${confirmedPct}% confirmed`, color: "#10b981", bg: "rgba(16,185,129,0.12)",
+      spark: revValues, trend: "+4.35%", up: true,
+      icon: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    },
+    {
+      label: "Total Bookings", value: String(stats?.totalBookings ?? bookings.length),
+      sub: "All time", color: "#3b82f6", bg: "rgba(59,130,246,0.12)",
+      spark: bkgValues, trend: "+2.59%", up: true,
+      icon: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>,
+    },
+    {
+      label: "Active Listings", value: String(stats?.totalListings ?? 0),
+      sub: "Published", color: "#ff5a5f", bg: "rgba(255,90,95,0.12)",
+      spark: null, trend: "+1.82%", up: true,
+      icon: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ff5a5f" strokeWidth="2" strokeLinecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    },
+    {
+      label: "Total Users", value: String(stats?.totalUsers ?? users.length),
+      sub: `${users.filter((u) => u.role === "host").length} hosts registered`,
+      color: "#8b5cf6", bg: "rgba(139,92,246,0.12)",
+      spark: months.map((m) => m.users), trend: "+0.95%", up: false,
+      icon: <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    },
   ];
 
   return (
@@ -130,119 +139,135 @@ export function AdminDashboard(): React.JSX.Element {
 
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
-          {!loadingStats && !loadingBookings && <LastUpdated ts={lastUpdated} />}
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>Overview</h1>
+            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Real-time admin dashboard</p>
+          </div>
+          {!loadingStats && !loadingBookings && <LiveBadge ts={lastUpdated} />}
         </div>
 
-        {/* KPI cards with sparklines */}
+        {/* KPI Cards */}
         {loadingStats || loadingBookings ? (
           <div className="flex justify-center py-10"><Spinner /></div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
             {kpi.map((k) => (
-              <div key={k.label} className="bg-white border border-[#ebebeb] rounded-2xl p-5 space-y-3">
-                <div>
-                  <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-                  <p className="text-sm font-semibold text-gray-800 mt-0.5">{k.label}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{k.sub}</p>
+              <div key={k.label} className="rounded-2xl p-5 space-y-4"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <div className="flex items-start justify-between gap-3">
+                  <KpiIcon bg={k.bg}>{k.icon}</KpiIcon>
+                  <div className="text-right min-w-0">
+                    <p className="text-2xl font-bold" style={{ color: k.color }}>{k.value}</p>
+                    <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--text)" }}>{k.label}</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{k.sub}</p>
+                  </div>
                 </div>
-                {k.vk && <MiniBar data={chart} valueKey={k.vk} color={k.tc} formatVal={k.fmt} />}
+                {k.spark && <Sparkline values={k.spark} color={k.color} />}
+                <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: k.up ? "#10b981" : "#ff5a5f" }}>
+                  <span>{k.up ? "↑" : "↓"}</span>
+                  <span>{k.trend}</span>
+                  <span className="font-normal ml-1" style={{ color: "var(--text-muted)" }}>vs last month</span>
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Revenue & Booking charts */}
+        {/* Main chart + weekly breakdown */}
         {!loadingBookings && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {/* Monthly Revenue */}
-            <div className="bg-white border border-[#ebebeb] rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-5">
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+            {/* Dual-line chart — 2/3 width */}
+            <div className="xl:col-span-2 rounded-2xl p-6"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
-                  <h2 className="text-sm font-bold text-gray-900">Monthly Revenue</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Confirmed bookings · last 6 months</p>
-                </div>
-                <p className="text-lg font-bold text-emerald-600">{numeral(totalRevenue).format("$0,0")}</p>
-              </div>
-              <div className="flex items-end gap-2 h-36">
-                {chart.map((m) => {
-                  const max = Math.max(...chart.map((c) => c.revenue), 1);
-                  return (
-                    <div key={m.key} className="flex-1 flex flex-col items-center gap-1 group relative">
-                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        {m.revenue > 0 ? numeral(m.revenue).format("$0,0") : "—"}
-                      </span>
-                      <div className="w-full bg-[#ff5a5f] rounded-t" style={{ height: `${Math.max((m.revenue / max) * 100, m.revenue > 0 ? 4 : 0)}%` }} />
-                      <span className="text-[10px] text-gray-400">{m.label}</span>
+                  <div className="flex items-center gap-5 mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-[#10b981]" />
+                      <span className="text-sm font-semibold" style={{ color: "#10b981" }}>Total Revenue</span>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-[#3b82f6]" />
+                      <span className="text-sm font-semibold" style={{ color: "#3b82f6" }}>Total Bookings</span>
+                    </div>
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Last 6 months</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xl font-bold text-emerald-500">{numeral(totalRevenue).format("$0,0")}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{bookings.length} bookings</p>
+                </div>
               </div>
+              <DualLineChart
+                labels={labels}
+                seriesA={{ label: "Revenue",  values: revValues, color: "#10b981", gradId: "db-rev" }}
+                seriesB={{ label: "Bookings", values: bkgValues, color: "#3b82f6", gradId: "db-bk"  }}
+                height={240}
+                formatA={(v) => numeral(v).format("$0,0")}
+                formatB={String}
+              />
             </div>
 
-            {/* Booking Volume */}
-            <div className="bg-white border border-[#ebebeb] rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-sm font-bold text-gray-900">Booking Volume</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">All bookings · last 6 months</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-sky-600">{bookings.length}</p>
-                  <p className="text-xs text-gray-400">total</p>
-                </div>
+            {/* Weekly grouped chart — 1/3 width */}
+            <div className="rounded-2xl p-6"
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>This Week</h2>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Bookings</span>
               </div>
-              <div className="flex items-end gap-2 h-36">
-                {chart.map((m) => {
-                  const max = Math.max(...chart.map((c) => c.bookings), 1);
-                  return (
-                    <div key={m.key} className="flex-1 flex flex-col items-center gap-1 group relative">
-                      <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        {m.bookings || "—"}
-                      </span>
-                      <div className="w-full bg-sky-400 rounded-t" style={{ height: `${Math.max((m.bookings / max) * 100, m.bookings > 0 ? 4 : 0)}%` }} />
-                      <span className="text-[10px] text-gray-400">{m.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex gap-4 mt-4 pt-3 border-t border-[#f5f5f5] text-xs text-gray-500">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400" />{confirmed} confirmed</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300" />{cancelled} cancelled</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />{bookings.length - confirmed - cancelled} pending</span>
+              <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>Confirmed vs cancelled by day</p>
+              <GroupedBarChart
+                data={weekData}
+                colorA="#10b981" colorB="#ff5a5f"
+                labelA="Confirmed" labelB="Cancelled"
+                height={240}
+              />
+              <div className="mt-4 pt-4 grid grid-cols-2 gap-3" style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="text-center">
+                  <p className="text-xl font-bold text-emerald-500">{confirmed}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Confirmed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl font-bold text-[#ff5a5f]">{cancelled}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>Cancelled</p>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Recent bookings */}
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <h2 className="text-base font-bold text-gray-900">Recent Bookings</h2>
-            <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 text-xs font-bold">{bookings.length} total</span>
+        {/* Recent Bookings */}
+        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+          <div className="px-6 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>Recent Bookings</h2>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">{bookings.length} total</span>
           </div>
-          {loadingBookings ? <div className="flex justify-center py-6"><Spinner /></div> :
-           bookings.length === 0 ? <div className="bg-white border border-[#ebebeb] rounded-2xl p-8 text-center text-sm text-gray-400">No bookings yet</div> : (
-            <div className="bg-white border border-[#ebebeb] rounded-2xl overflow-hidden overflow-x-auto">
-              <table className="w-full text-sm min-w-[520px]">
+          {loadingBookings ? <div className="flex justify-center py-6"><Spinner /></div>
+          : bookings.length === 0 ? <div className="p-8 text-center text-sm" style={{ color: "var(--text-muted)" }}>No bookings yet</div>
+          : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[540px]">
                 <thead>
-                  <tr className="border-b border-[#ebebeb] text-xs text-gray-400 uppercase tracking-wide">
-                    <th className="text-left px-5 py-3 font-semibold">Listing</th>
-                    <th className="text-left px-5 py-3 font-semibold">Guest</th>
-                    <th className="text-left px-5 py-3 font-semibold">Dates</th>
-                    <th className="text-right px-5 py-3 font-semibold">Amount</th>
-                    <th className="text-left px-5 py-3 font-semibold">Status</th>
+                  <tr className="text-xs uppercase tracking-wide" style={{ borderBottom: "1px solid var(--border)", color: "var(--text-light)" }}>
+                    <th className="text-left px-6 py-3 font-semibold">Listing</th>
+                    <th className="text-left px-6 py-3 font-semibold">Guest</th>
+                    <th className="text-left px-6 py-3 font-semibold">Dates</th>
+                    <th className="text-right px-6 py-3 font-semibold">Amount</th>
+                    <th className="text-left px-6 py-3 font-semibold">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bookings.slice(0, 8).map((b) => (
-                    <tr key={b.id} className="border-b border-[#f5f5f5] last:border-0 hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3 font-medium text-gray-900 max-w-[160px] truncate">{b.listingTitle}</td>
-                      <td className="px-5 py-3 text-gray-600">{b.guestName || "—"}</td>
-                      <td className="px-5 py-3 text-gray-500 whitespace-nowrap text-xs">{format(new Date(b.checkIn), "MMM d")} → {format(new Date(b.checkOut), "MMM d, yyyy")}</td>
-                      <td className="px-5 py-3 text-right font-semibold text-gray-900">{numeral(b.totalPrice).format("$0,0")}</td>
-                      <td className="px-5 py-3">
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${b.status === "confirmed" ? "bg-green-100 text-green-700" : b.status === "cancelled" ? "bg-gray-100 text-gray-500" : "bg-yellow-100 text-yellow-700"}`}>
+                    <tr key={b.id} className="hover:bg-gray-50 transition-colors" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td className="px-6 py-3 font-medium max-w-[160px] truncate" style={{ color: "var(--text)" }}>{b.listingTitle}</td>
+                      <td className="px-6 py-3" style={{ color: "var(--text-muted)" }}>{b.guestName || "—"}</td>
+                      <td className="px-6 py-3 whitespace-nowrap text-xs" style={{ color: "var(--text-muted)" }}>
+                        {format(new Date(b.checkIn), "MMM d")} → {format(new Date(b.checkOut), "MMM d, yyyy")}
+                      </td>
+                      <td className="px-6 py-3 text-right font-bold" style={{ color: "var(--text)" }}>{numeral(b.totalPrice).format("$0,0")}</td>
+                      <td className="px-6 py-3">
+                        <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${b.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : b.status === "cancelled" ? "bg-gray-100 text-gray-500" : "bg-amber-100 text-amber-700"}`}>
                           {b.status}
                         </span>
                       </td>
@@ -255,47 +280,46 @@ export function AdminDashboard(): React.JSX.Element {
         </div>
 
         {/* Users */}
-        <div>
-          <div className="flex items-center gap-3 mb-3">
-            <h2 className="text-base font-bold text-gray-900">Users</h2>
-            {!loadingUsers && <span className="px-2.5 py-0.5 rounded-full bg-red-100 text-[#ff5a5f] text-xs font-bold">{users.length} registered</span>}
+        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+          <div className="px-6 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid var(--border)" }}>
+            <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>Users</h2>
+            {!loadingUsers && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-100 text-[#ff5a5f]">{users.length} registered</span>}
           </div>
           {loadingUsers ? <div className="flex justify-center py-6"><Spinner /></div> : (
-            <div className="bg-white border border-[#ebebeb] rounded-2xl overflow-hidden overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[500px]">
                 <thead>
-                  <tr className="border-b border-[#ebebeb] text-xs text-gray-400 uppercase tracking-wide">
-                    <th className="text-left px-5 py-3 font-semibold">Name</th>
-                    <th className="text-left px-5 py-3 font-semibold">Email</th>
-                    <th className="text-left px-5 py-3 font-semibold">Role</th>
-                    <th className="text-left px-5 py-3 font-semibold">Status</th>
-                    <th className="text-left px-5 py-3 font-semibold">Privileges</th>
+                  <tr className="text-xs uppercase tracking-wide" style={{ borderBottom: "1px solid var(--border)", color: "var(--text-light)" }}>
+                    <th className="text-left px-6 py-3 font-semibold">Name</th>
+                    <th className="text-left px-6 py-3 font-semibold">Email</th>
+                    <th className="text-left px-6 py-3 font-semibold">Role</th>
+                    <th className="text-left px-6 py-3 font-semibold">Status</th>
+                    <th className="text-left px-6 py-3 font-semibold">Privileges</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map((u) => (
-                    <tr key={u.id} className="border-b border-[#f5f5f5] last:border-0 hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3 font-medium text-gray-900">{u.name}</td>
-                      <td className="px-5 py-3 text-gray-500">{u.email}</td>
-                      <td className="px-5 py-3 capitalize text-gray-600">{u.role.toLowerCase()}</td>
-                      <td className="px-5 py-3">
+                    <tr key={u.id} className="hover:bg-gray-50 transition-colors" style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td className="px-6 py-3 font-medium" style={{ color: "var(--text)" }}>{u.name}</td>
+                      <td className="px-6 py-3" style={{ color: "var(--text-muted)" }}>{u.email}</td>
+                      <td className="px-6 py-3 capitalize" style={{ color: "var(--text-muted)" }}>{u.role}</td>
+                      <td className="px-6 py-3">
                         {u.banned
                           ? <span className="text-xs bg-red-100 text-red-600 px-2.5 py-1 rounded-full font-semibold">Banned</span>
-                          : <span className="text-xs bg-green-100 text-green-600 px-2.5 py-1 rounded-full font-semibold">Active</span>}
+                          : <span className="text-xs bg-emerald-100 text-emerald-600 px-2.5 py-1 rounded-full font-semibold">Active</span>}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-6 py-3">
                         {!u.banned && u.role !== "admin" && (
-                          u.role === "guest" ? (
-                            <button onClick={() => setRole({ userId: u.id, role: "host" })} disabled={settingRole}
-                              className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-200 disabled:opacity-50 font-semibold">
-                              Grant Host
-                            </button>
-                          ) : (
-                            <button onClick={() => setRole({ userId: u.id, role: "guest" })} disabled={settingRole}
-                              className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50">
-                              Revoke Host
-                            </button>
-                          )
+                          u.role === "guest"
+                            ? <button onClick={() => setRole({ userId: u.id, role: "host" })} disabled={settingRole}
+                                className="text-xs bg-amber-100 text-amber-700 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-200 disabled:opacity-50 font-semibold">
+                                Grant Host
+                              </button>
+                            : <button onClick={() => setRole({ userId: u.id, role: "guest" })} disabled={settingRole}
+                                className="text-xs px-3 py-1.5 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                                style={{ border: "1px solid var(--border-2)", color: "var(--text-muted)" }}>
+                                Revoke Host
+                              </button>
                         )}
                       </td>
                     </tr>
