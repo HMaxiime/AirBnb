@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import type { AuthRequest } from "../middlewares/auth.middleware.js";
 import crypto from "crypto";
 import { sendEmail } from "../config/email.js";
+import { welcomeEmail, passwordResetEmail } from "../templates/emails.js";
 import { createUserSchema, loginSchema, changePasswordSchema } from "../validators/users.validators.js";
 import { success } from "zod";
 
@@ -42,12 +43,7 @@ export async function register(
     const { password: _, ...userWithoutPassword } = user;
     res.status(201).json(userWithoutPassword);
 
-    // inside register():
-    await sendEmail(
-      data.email,
-      "Welcome to Airbnb!",
-      `<h1>Welcome, ${data.name}!</h1><p>Your account has been created successfully.</p>`,
-    );
+    sendEmail(data.email, "Welcome to Airbnb!", welcomeEmail(data.name)).catch(() => {});
   } catch (error) {
     next(error);
   }
@@ -177,11 +173,10 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
       },
     });
 
-    // In a real app: send email with link containing rawToken
-    // e.g. http://localhost:3000/auth/reset-password/<rawToken>
-    console.log(`Reset token for ${email}: ${rawToken}`);
+    const resetLink = `${process.env.FRONTEND_URL ?? "http://localhost:5173"}/reset-password/${rawToken}`;
+    sendEmail(user.email, "Reset your password", passwordResetEmail(user.name, resetLink)).catch(() => {});
 
-    res.json({successResponse, resetToken: rawToken});
+    res.json(successResponse);
   } catch (error) {
     next(error);
   }

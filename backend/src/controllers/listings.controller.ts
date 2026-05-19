@@ -3,6 +3,8 @@ import prisma from "../config/prisma.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../config/cloudinary.js";
 import type { AuthRequest } from "../middlewares/auth.middleware.js";
 import { createListingSchema, updateListingSchema } from "../validators/listings.validator.js";
+import { sendEmail } from "../config/email.js";
+import { listingSubmittedEmail, listingApprovedEmail, listingRejectedEmail } from "../templates/emails.js";
 
 // Multipart form sends every field as a string — coerce before Zod validation.
 function coerceBody(body: Record<string, unknown>) {
@@ -173,6 +175,15 @@ export async function createListing(req: AuthRequest, res: Response, next: NextF
         photos: { select: { id: true, url: true, publicId: true } },
       },
     });
+
+    // Notify host that the listing is under review.
+    if (result) {
+      sendEmail(
+        result.host.email,
+        "Your listing is under review",
+        listingSubmittedEmail(result.host.name, result.title),
+      ).catch(() => {});
+    }
 
     res.status(201).json(result);
   } catch (error) {
@@ -353,6 +364,21 @@ export async function patchListingStatus(req: AuthRequest, res: Response, next: 
         photos: { select: { id: true, url: true, publicId: true } },
       },
     });
+
+    // Notify host of approval or rejection.
+    if (status === "APPROVED") {
+      sendEmail(
+        updated.host.email,
+        "Your listing has been approved!",
+        listingApprovedEmail(updated.host.name, updated.title),
+      ).catch(() => {});
+    } else if (status === "REJECTED") {
+      sendEmail(
+        updated.host.email,
+        "Your listing was not approved",
+        listingRejectedEmail(updated.host.name, updated.title),
+      ).catch(() => {});
+    }
 
     res.json(updated);
   } catch (error) {

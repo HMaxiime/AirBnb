@@ -3,6 +3,8 @@ import prisma from "../config/prisma.js";
 import type { Request, Response, NextFunction } from "express";
 import type { AuthRequest } from "../middlewares/auth.middleware.js";
 import { createBookingSchema } from "../validators/bookings.validators.js";
+import { sendEmail } from "../config/email.js";
+import { bookingConfirmedEmail, bookingCancelledEmail } from "../templates/emails.js";
 
 // Shared include block so every response returns the listing's first photo.
 const bookingInclude = {
@@ -190,6 +192,21 @@ export const createBooking = async (
       });
     });
 
+    // Send confirmation email to guest (non-blocking — don't fail the request if email fails).
+    sendEmail(
+      booking.guest.email,
+      "Your booking is confirmed!",
+      bookingConfirmedEmail(
+        booking.guest.name,
+        booking.listing.title,
+        booking.listing.location,
+        booking.checkIn.toISOString().split("T")[0] ?? "",
+        booking.checkOut.toISOString().split("T")[0] ?? "",
+        (booking as any).guests ?? 1,
+        booking.totalPrice,
+      ),
+    ).catch(() => {});
+
     res.status(201).json(booking);
   } catch (error) {
     next(error);
@@ -205,13 +222,34 @@ export const deleteBooking = async (
 ) => {
   try {
     const id = req.params["id"] as string;
-    
 
     if (!id) {
       return res.status(400).json({ message: "Invalid booking ID" });
     }
 
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        guest:   { select: { name: true, email: true } },
+        listing: { select: { title: true } },
+      },
+    });
+
     await prisma.booking.delete({ where: { id } });
+
+    if (booking) {
+      sendEmail(
+        booking.guest.email,
+        "Your booking has been cancelled",
+        bookingCancelledEmail(
+          booking.guest.name,
+          booking.listing.title,
+          booking.checkIn.toISOString().split("T")[0] ?? "",
+          booking.checkOut.toISOString().split("T")[0] ?? "",
+        ),
+      ).catch(() => {});
+    }
+
     res.status(204).send();
   } catch (error) {
     next(error);
