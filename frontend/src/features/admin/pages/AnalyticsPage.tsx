@@ -5,7 +5,7 @@ import { AdminLayout } from "../components/AdminLayout";
 import { useAdminStats } from "../hooks/useAdminStats";
 import { useAllBookings } from "../hooks/useAllBookings";
 import { listingService, userService } from "../../../lib/apiService";
-import { MovingAverageChart, BarChart, DonutChart, GroupedBarChart } from "../components/Charts";
+import { MovingAverageChart, PieComparison, StackedHBarChart } from "../components/Charts";
 import type { Booking } from "../../../lib/api";
 import type { MockUser } from "../../../lib/api";
 
@@ -214,52 +214,76 @@ export function AnalyticsPage(): React.JSX.Element {
           </div>
         </div>
 
-        {/* Booking Volume + Status Donut */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="bg-white border border-[#ebebeb] rounded-2xl p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-1">Booking Volume</h2>
-            <p className="text-xs text-gray-400 mb-4">All bookings per month · last 12 months</p>
-            <BarChart
-              data={bookingsData}
-              color="#0ea5e9"
-              gradId="analytics-bk"
-              height={200}
-              formatVal={String}
-            />
-          </div>
-
-          <div className="bg-white border border-[#ebebeb] rounded-2xl p-6">
-            <h2 className="text-base font-bold text-gray-900 mb-1">Booking Status</h2>
-            <p className="text-xs text-gray-400 mb-6">Distribution across all bookings</p>
-            {bookings.length === 0
-              ? <p className="text-sm text-gray-400 text-center py-10">No booking data yet.</p>
-              : <DonutChart slices={donutSlices} />
-            }
-          </div>
-        </div>
-
-        {/* Moderation History Grouped Bar */}
-        <div className="bg-white border border-[#ebebeb] rounded-2xl p-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Listing Moderation History</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Approved vs rejected per month · last 12 months</p>
-            </div>
-            <div className="flex gap-6 text-right flex-shrink-0">
+        {/* Moderation History */}
+        <div>
+          <div className="rounded-2xl p-6"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+            <div className="flex items-center justify-between mb-1">
               <div>
-                <p className="text-xl font-bold text-emerald-600">{totalApproved}</p>
-                <p className="text-xs text-gray-400">Approved</p>
+                <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>Listing Moderation History</h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                  {chartSubtitle} · hover a slice for detail
+                </p>
               </div>
-              <div>
-                <p className="text-xl font-bold text-[#ff5a5f]">{totalRejected}</p>
-                <p className="text-xs text-gray-400">Rejected</p>
+              <div className="flex gap-4 text-right">
+                <div><p className="text-base font-bold text-emerald-600">{totalApproved}</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>Approved</p></div>
+                {totalRejected > 0 && (
+                  <div><p className="text-base font-bold text-[#ff5a5f]">{totalRejected}</p><p className="text-xs" style={{ color: "var(--text-muted)" }}>Rejected</p></div>
+                )}
               </div>
             </div>
+            {totalApproved + totalRejected === 0 ? (
+              <p className="text-sm text-center py-8" style={{ color: "var(--text-muted)" }}>No reviewed listings yet.</p>
+            ) : (
+              <>
+                {/* Pie chart */}
+                <PieComparison
+                  leftTitle="Moderation"
+                  leftSlices={[
+                    { label: "Approved", value: totalApproved, color: "#22c55e" },
+                    ...(totalRejected > 0 ? [{ label: "Rejected", value: totalRejected, color: "#ff5a5f" }] : []),
+                  ]}
+                  rightTitle=""
+                  rightSlices={[]}
+                  tableRows={[
+                    {
+                      label: "Total",
+                      leftCols: [
+                        { label: "Approved", value: totalApproved, total: totalApproved + totalRejected, color: "#22c55e" },
+                        ...(totalRejected > 0 ? [{ label: "Rejected", value: totalRejected, total: totalApproved + totalRejected, color: "#ff5a5f" }] : []),
+                      ],
+                      rightCols: [],
+                    },
+                  ]}
+                />
+
+                {/* Stacked bar breakdown per month — below the pie */}
+                <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--border)" }}>
+                  <p className="text-xs font-semibold mb-4" style={{ color: "var(--text-muted)" }}>
+                    Monthly breakdown
+                  </p>
+                  <StackedHBarChart
+                    series={[
+                      { label: "Approved", color: "#22c55e" },
+                      ...(totalRejected > 0 ? [{ label: "Rejected", color: "#ff5a5f" }] : []),
+                    ]}
+                    rows={monthly
+                      .map((m) => {
+                        const match    = last12mod.find((h) => h.month === m.key);
+                        const approved = match?.approved ?? 0;
+                        const rejected = match?.rejected ?? 0;
+                        return {
+                          label:  m.label,
+                          values: totalRejected > 0 ? [approved, rejected] : [approved],
+                        };
+                      })
+                      .filter((r) => r.values.some((v) => v > 0))}
+                    barHeight={24}
+                  />
+                </div>
+              </>
+            )}
           </div>
-          {modData.length === 0
-            ? <p className="text-sm text-gray-400 text-center py-10">No reviewed listings yet.</p>
-            : <GroupedBarChart data={modData} colorA="#22c55e" colorB="#ff5a5f" labelA="Approved" labelB="Rejected" height={220} />
-          }
         </div>
 
         {/* User Activity Report */}

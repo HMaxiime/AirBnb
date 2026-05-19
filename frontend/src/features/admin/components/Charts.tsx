@@ -1,5 +1,413 @@
 import { useState } from "react";
 
+// ── Pie Chart with external pointer labels ────────────────────────────────────
+
+export interface PieSlice { label: string; value: number; color: string }
+
+function PieChart({ slices, title, total, cx = 160, cy = 160, R = 110 }: {
+  slices: PieSlice[]; title: string; total: number; cx?: number; cy?: number; R?: number;
+}) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const sum = slices.reduce((s, d) => s + d.value, 0) || 1;
+
+  function toXY(angle: number, r: number) {
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  }
+
+  let cumAngle = -Math.PI / 2;
+  const paths = slices.map((s, i) => {
+    const pct   = s.value / sum;
+    const sweep = pct * 2 * Math.PI;
+    const start = cumAngle;
+    cumAngle   += sweep;
+    const end   = cumAngle;
+    const mid   = start + sweep / 2;
+    const isH   = hovered === i;
+    const rr    = isH ? R + 6 : R;
+
+    const s1 = toXY(start, rr); const s2 = toXY(end, rr);
+    const lg = sweep > Math.PI ? 1 : 0;
+
+    // Label positioning
+    const labelR   = R + 28;
+    const lp       = toXY(mid, labelR);
+    const anchor   = lp.x > cx ? "start" : "end";
+    const lineEnd  = toXY(mid, R + 6);
+    const lineKnee = toXY(mid, R + 18);
+    const lineOut  = { x: lp.x + (lp.x > cx ? 8 : -8), y: lp.y };
+
+    // For large slices (> 15%) put label inside the slice
+    const isLarge = pct > 0.18;
+    const innerLP = toXY(mid, R * 0.62);
+
+    return { s1, s2, lg, rr, pct, mid, lp, lineEnd, lineKnee, lineOut, anchor, isLarge, innerLP, isH, i, s };
+  });
+
+  return (
+    <g>
+      {/* Title */}
+      <text x={cx} y={cy + R + 52} textAnchor="middle" fontSize="13" fontWeight="600"
+        style={{ fill: "var(--text-muted)" }}>{title}</text>
+
+      {/* Slices */}
+      {paths.map(({ s1, s2, lg, rr, isH, i, s, pct }) => {
+        const start2 = paths.slice(0, i).reduce((a, p) => a + p.pct, 0) * 2 * Math.PI - Math.PI / 2;
+        const end2   = start2 + pct * 2 * Math.PI;
+        const a1 = toXY(start2, rr); const a2 = toXY(end2, rr);
+        return (
+          <path key={i}
+            d={`M ${cx} ${cy} L ${a1.x} ${a1.y} A ${rr} ${rr} 0 ${lg} 1 ${a2.x} ${a2.y} Z`}
+            fill={s.color}
+            opacity={hovered === null || isH ? 1 : 0.75}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+            style={{ cursor: "pointer", transition: "opacity 0.15s" }}
+          />
+        );
+      })}
+
+      {/* Labels */}
+      {paths.map(({ pct, mid, lp, lineEnd, lineKnee, lineOut, anchor, isLarge, innerLP, i, s }) => {
+        if (pct < 0.005) return null;
+        const labelText  = s.label;
+        const pctText    = `${Math.round(pct * 100)}%`;
+
+        if (isLarge) {
+          return (
+            <g key={`lbl-${i}`} pointerEvents="none">
+              <text x={innerLP.x} y={innerLP.y - 5} textAnchor="middle" fontSize="12" fontWeight="700" fill="white">
+                {labelText}
+              </text>
+              <text x={innerLP.x} y={innerLP.y + 10} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.85)">
+                {pctText}
+              </text>
+            </g>
+          );
+        }
+
+        return (
+          <g key={`lbl-${i}`} pointerEvents="none">
+            {/* Pointer line */}
+            <polyline
+              points={`${lineEnd.x},${lineEnd.y} ${lineKnee.x},${lineKnee.y} ${lineOut.x},${lineOut.y}`}
+              fill="none" stroke="var(--text-light)" strokeWidth="1"
+            />
+            <text x={lineOut.x + (anchor === "start" ? 4 : -4)} y={lineOut.y + 4}
+              textAnchor={anchor} fontSize="11" fontWeight="600"
+              style={{ fill: "var(--text)" }}>
+              {labelText}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Hover tooltip in centre */}
+      {hovered !== null && (
+        <g pointerEvents="none">
+          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="13" fontWeight="800"
+            style={{ fill: "var(--text)" }}>
+            {slices[hovered].value.toLocaleString()}
+          </text>
+          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="11"
+            style={{ fill: "var(--text-muted)" }}>
+            {slices[hovered].label}
+          </text>
+          <text x={cx} y={cy + 26} textAnchor="middle" fontSize="11" fontWeight="700"
+            style={{ fill: slices[hovered].color }}>
+            {Math.round((slices[hovered].value / sum) * 100)}%
+          </text>
+        </g>
+      )}
+
+      {/* Total */}
+      {hovered === null && (
+        <text x={cx} y={cy + 6} textAnchor="middle" fontSize="12"
+          style={{ fill: "var(--text-muted)" }}>
+          {total.toLocaleString()}
+        </text>
+      )}
+    </g>
+  );
+}
+
+// ── Dual Pie + Comparison Table ───────────────────────────────────────────────
+
+export interface PieComparisonProps {
+  leftTitle:   string;
+  leftSlices:  PieSlice[];
+  rightTitle:  string;
+  rightSlices: PieSlice[];
+  tableRows:   {
+    label:    string;
+    leftCols:  { label: string; value: number; total: number; color: string }[];
+    rightCols: { label: string; value: number; total: number; color: string }[];
+  }[];
+}
+
+export function PieComparison({ leftTitle, leftSlices, rightTitle, rightSlices, tableRows }: PieComparisonProps) {
+  const leftTotal  = leftSlices.reduce((s, d)  => s + d.value, 0);
+  const rightTotal = rightSlices.reduce((s, d) => s + d.value, 0);
+  const isSingle   = rightSlices.length === 0;
+  const leftCols   = tableRows[0]?.leftCols.map((c)  => c.label) ?? [];
+  const rightCols  = tableRows[0]?.rightCols.map((c) => c.label) ?? [];
+
+  // ── Single pie: pie LEFT, compact table RIGHT ──────────────────────────────
+  if (isSingle) {
+    return (
+      <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+        {/* Pie */}
+        <div className="flex-shrink-0 flex items-center justify-center">
+          <svg viewBox="0 0 320 300" style={{ width: 240, height: 240 }} preserveAspectRatio="xMidYMid meet">
+            <PieChart slices={leftSlices} title={leftTitle} total={leftTotal} cx={160} cy={140} R={125} />
+          </svg>
+        </div>
+
+        {/* Compact table */}
+        <div className="flex-1 min-w-0">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                <th className="text-left pb-2 pr-3 text-xs font-semibold uppercase tracking-wide"
+                  style={{ color: "var(--text-light)" }} />
+                {tableRows[0]?.leftCols.map((c) => (
+                  <th key={c.label} className="pb-2 px-3 text-center text-xs font-bold uppercase tracking-wide"
+                    style={{ color: "var(--text)", borderLeft: "1px solid var(--border)" }}>
+                    {c.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableRows.map((row, ri) => (
+                <tr key={ri} className="hover:bg-gray-50 transition-colors"
+                  style={{ borderBottom: "1px solid var(--border)" }}>
+                  <td className="py-2.5 pr-3 font-semibold text-xs" style={{ color: "var(--text)" }}>
+                    {row.label}
+                  </td>
+                  {row.leftCols.map((c, ci) => (
+                    <td key={ci} className="py-2.5 px-3 text-center"
+                      style={{ borderLeft: "1px solid var(--border)" }}>
+                      <span className="text-base font-bold" style={{ color: c.color }}>
+                        {c.value.toLocaleString()}
+                      </span>
+                      {c.total > 0 && (
+                        <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>
+                          ({Math.round((c.value / c.total) * 100)}%)
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              <tr style={{ borderTop: "2px solid var(--border)" }}>
+                <td className="pt-2.5 pr-3 text-xs font-semibold" style={{ color: "var(--text-muted)" }}>
+                  Total
+                </td>
+                <td className="pt-2.5 px-3 text-center font-bold" style={{ color: "var(--text)", borderLeft: "1px solid var(--border)" }}
+                  colSpan={tableRows[0]?.leftCols.length ?? 1}>
+                  {leftTotal.toLocaleString()}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Dual pie: stacked layout ───────────────────────────────────────────────
+  return (
+    <div className="w-full space-y-0">
+      <div className="w-full overflow-x-auto">
+        <svg viewBox="0 0 900 420" className="w-full" style={{ maxHeight: 380 }} preserveAspectRatio="xMidYMid meet">
+          <PieChart slices={leftSlices}  title={leftTitle}  total={leftTotal}  cx={220} cy={180} R={110} />
+          <PieChart slices={rightSlices} title={rightTitle} total={rightTotal} cx={680} cy={180} R={110} />
+        </svg>
+      </div>
+      <div className="overflow-x-auto" style={{ borderTop: "1px solid var(--border)" }}>
+        <table className="w-full text-sm min-w-[600px]">
+          <thead>
+            <tr style={{ borderBottom: "2px solid var(--border)" }}>
+              <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "var(--text-muted)", width: "28%" }}>
+                <span className="font-bold" style={{ color: "var(--text)" }}>{leftTotal.toLocaleString()}</span> {leftTitle}
+                {rightTotal > 0 && <><br /><span className="font-bold" style={{ color: "var(--text)" }}>{rightTotal.toLocaleString()}</span> {rightTitle}</>}
+              </th>
+              {leftCols.map((lbl) => (
+                <th key={lbl} className="px-4 py-3 text-center font-bold text-xs uppercase tracking-wide"
+                  style={{ color: "var(--text)", borderLeft: "1px solid var(--border)" }}>{lbl}</th>
+              ))}
+              {rightCols.map((lbl) => (
+                <th key={lbl} className="px-4 py-3 text-center font-bold text-xs uppercase tracking-wide"
+                  style={{ color: "var(--text)", borderLeft: "1px solid var(--border)" }}>{lbl}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.map((row, ri) => (
+              <tr key={ri} className="hover:bg-gray-50 transition-colors" style={{ borderBottom: "1px solid var(--border)" }}>
+                <td className="px-4 py-3 font-semibold text-sm" style={{ color: "var(--text)" }}>{row.label}</td>
+                {row.leftCols.map((c, ci) => (
+                  <td key={ci} className="px-4 py-3 text-center text-sm" style={{ borderLeft: "1px solid var(--border)" }}>
+                    <span className="font-bold" style={{ color: c.color }}>{c.value.toLocaleString()}</span>
+                    {c.total > 0 && <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>({Math.round((c.value / c.total) * 100)}%)</span>}
+                  </td>
+                ))}
+                {row.rightCols.map((c, ci) => (
+                  <td key={ci} className="px-4 py-3 text-center text-sm" style={{ borderLeft: "1px solid var(--border)" }}>
+                    <span className="font-bold" style={{ color: c.color }}>{c.value.toLocaleString()}</span>
+                    {c.total > 0 && <span className="text-xs ml-1" style={{ color: "var(--text-muted)" }}>({Math.round((c.value / c.total) * 100)}%)</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Stacked Horizontal Bar Chart ─────────────────────────────────────────────
+// Each row = one label (e.g. month). Each bar = multiple stacked segments.
+
+export interface StackedBarSeries { label: string; color: string }
+
+export interface StackedBarRow {
+  label:  string;                 // row label (e.g. "January")
+  values: number[];               // one value per series, in order
+}
+
+interface StackedHBarChartProps {
+  series:    StackedBarSeries[];  // defines colours & legend labels
+  rows:      StackedBarRow[];
+  barHeight?: number;             // px height of each bar
+  showXAxis?: boolean;
+}
+
+export function StackedHBarChart({
+  series, rows, barHeight = 28, showXAxis = true,
+}: StackedHBarChartProps) {
+  const [hovered, setHovered] = useState<{ row: number; seg: number } | null>(null);
+
+  const rowTotals = rows.map((r) => r.values.reduce((s, v) => s + v, 0));
+  const maxTotal  = Math.max(...rowTotals, 1);
+
+  // Nice round integer axis ticks (avoids floating-point artefacts)
+  const tickCount = 5;
+  const rawStep   = maxTotal / tickCount;
+  const mag       = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+  const niceStep  = Math.round(Math.ceil(rawStep / mag) * mag) || 1;
+  const niceMax   = niceStep * tickCount;
+  const ticks     = Array.from({ length: tickCount + 1 }, (_, i) => Math.round(i * niceStep));
+
+  const labelW  = 80;   // px left column for row labels
+  const valueW  = 48;   // px right column for total
+  const gapY    = 14;   // gap between bars
+
+  return (
+    <div className="w-full select-none">
+
+      {/* X-axis ticks */}
+      {showXAxis && (
+        <div className="flex mb-2" style={{ paddingLeft: labelW, paddingRight: valueW }}>
+          {ticks.map((t, i) => (
+            <div key={i} className="flex-1 text-center text-[10px]" style={{ color: "var(--text-light)" }}>
+              {t}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Grid + bars */}
+      <div className="space-y-0">
+        {rows.map((row, ri) => {
+          const rowTotal = rowTotals[ri];
+          return (
+            <div key={ri} className="flex items-center" style={{ marginBottom: gapY }}>
+
+              {/* Row label */}
+              <div className="flex-shrink-0 text-right pr-3 text-xs font-semibold"
+                style={{ width: labelW, color: "var(--text-muted)" }}>
+                {row.label}
+              </div>
+
+              {/* Bar track */}
+              <div className="relative flex-1 rounded-full overflow-hidden"
+                style={{ height: barHeight, background: "var(--surface-2)" }}>
+
+                {/* Grid lines (vertical) */}
+                {showXAxis && ticks.slice(1, -1).map((t, i) => (
+                  <div key={i} className="absolute top-0 bottom-0 w-px pointer-events-none"
+                    style={{ left: `${(t / niceMax) * 100}%`, background: "var(--border)", opacity: 0.6 }} />
+                ))}
+
+                {/* Stacked segments */}
+                <div className="absolute inset-0 flex">
+                  {row.values.map((val, si) => {
+                    const widthPct = (val / niceMax) * 100;
+                    const isH      = hovered?.row === ri && hovered.seg === si;
+                    if (widthPct < 0.1) return null;
+                    return (
+                      <div
+                        key={si}
+                        className="h-full transition-all duration-300 relative"
+                        style={{
+                          width:      `${widthPct}%`,
+                          background: series[si]?.color ?? "#ccc",
+                          opacity:    hovered && !isH ? 0.65 : 1,
+                          // first segment: round left; last visible: round right
+                          borderRadius: si === 0 ? "9999px 0 0 9999px" : "0",
+                        }}
+                        onMouseEnter={() => setHovered({ row: ri, seg: si })}
+                        onMouseLeave={() => setHovered(null)}
+                      >
+                        {/* Inline label when wide enough */}
+                        {widthPct > 12 && (
+                          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white pointer-events-none">
+                            {val.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Tooltip */}
+                {hovered?.row === ri && hovered.seg !== undefined && (
+                  <div className="absolute -top-9 left-1/2 -translate-x-1/2 pointer-events-none z-10
+                    px-2.5 py-1 rounded-lg text-[11px] font-bold text-white shadow-lg whitespace-nowrap"
+                    style={{ background: "#111827" }}>
+                    {series[hovered.seg]?.label}: {row.values[hovered.seg].toLocaleString()}
+                    {rowTotal > 0 && ` (${Math.round((row.values[hovered.seg] / rowTotal) * 100)}%)`}
+                  </div>
+                )}
+              </div>
+
+              {/* Row total */}
+              <div className="flex-shrink-0 pl-3 text-xs font-bold tabular-nums"
+                style={{ width: valueW, color: "var(--text-muted)" }}>
+                {rowTotal}
+              </div>
+
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-5 mt-4 pt-3 flex-wrap"
+        style={{ borderTop: "1px solid var(--border)" }}>
+        {series.map((s, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: s.color }} />
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Cumulative Revenue Growth Chart ───────────────────────────────────────────
 
 interface CumulativeLineProps {

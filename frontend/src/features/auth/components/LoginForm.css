@@ -34,10 +34,21 @@
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.2s;
 }
 
+html.dark .form-group input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
 .form-group input:focus {
   border-color: #ff5a5f;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.12);
+}
+
+html.dark .form-group input:focus {
+  background: rgba(255, 255, 255, 0.10);
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.18);
 }
 
 .form-group input::placeholder { color: var(--text-light); }
