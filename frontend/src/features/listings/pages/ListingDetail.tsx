@@ -117,7 +117,7 @@ export function ListingDetail(): React.JSX.Element {
   const { data: listing, isLoading, isError } = useListing(id);
   const { toggle, isSaved } = useFavorites();
   const [lightbox, setLightbox] = useState<number | null>(null);
-  const isHost = user?.role === "host";
+  const isHost = user?.role === "host" || user?.role === "admin";
 
   if (isLoading) return <div className="listing-detail-page"><div className="detail-loading"><Spinner /></div></div>;
 
@@ -246,7 +246,9 @@ export function ListingDetail(): React.JSX.Element {
 
           {isHost ? (
             <div className="host-preview-banner">
-              You are viewing this listing as a host. Booking is only available to guests.
+              {user?.role === "admin"
+                ? "You are viewing this listing as an admin. Booking is not available to admins."
+                : "You are viewing this listing as a host. Booking is only available to guests."}
             </div>
           ) : (
             <>

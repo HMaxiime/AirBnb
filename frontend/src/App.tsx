@@ -131,11 +131,11 @@ function App() {
             element={<ResetPasswordPage />}
           />
 
-          {/* Guest */}
+          {/* Guest only — hosts and admins cannot book */}
           <Route
             path="/book/:id"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["guest"]}>
                 <BookingPage />
               </ProtectedRoute>
             }
@@ -245,7 +245,11 @@ function App() {
           />
           <Route
             path="/admin/moderation"
-            element={<Navigate to="/admin/bookings" replace />}
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <ModerationQueue />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/admin/bookings"

@@ -42,7 +42,7 @@ async function main() {
       name: "Sarah Monroe",
       email: "sarah@example.com",
       username: "sarah_host",
-      password: "$2b$10$placeholderHashedPassword1",
+      password: "$2b$10$WKvLWinCPWvejwlVXLs0lOISZdOU9jRTNwGlLe5gVTQ20rd8AzVqa", // Sarah1234!
       phone: "+1 555 010 0001",
       role: "HOST",
     },
@@ -53,18 +53,18 @@ async function main() {
       name: "Marco Rossi",
       email: "marco@example.com",
       username: "marco_host",
-      password: "$2b$10$placeholderHashedPassword2",
+      password: "$2b$10$t6NLRHc25YnCm5vZgdBZNOGiwNxMGyHVS1fBBsmodFyCz2u/5CU/e", // Marco1234!
       phone: "+39 333 000 0001",
       role: "HOST",
     },
   });
 
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: "Admin User",
       email: "admin@example.com",
       username: "admin",
-      password: "$2b$10$placeholderHashedPassword3",
+      password: "$2b$10$lPSvuKT8vH9wkK1sPTAzje7FLIYeXhniT/0ntc7tZYLW4Ye0n2z/W", // Admin1234!
       role: "ADMIN",
     },
   });
@@ -74,7 +74,7 @@ async function main() {
       name: "Alice Chen",
       email: "alice@example.com",
       username: "alice_guest",
-      password: "$2b$10$placeholderHashedPassword4",
+      password: "$2b$10$TwzMM8I7v2LvKKOySAmO4u208Kx07oreyPGn6JGxS0I.1LDbJlkyq", // Alice1234!
       phone: "+1 555 020 0001",
       role: "GUEST",
     },
@@ -85,7 +85,7 @@ async function main() {
       name: "James Okafor",
       email: "james@example.com",
       username: "james_guest",
-      password: "$2b$10$placeholderHashedPassword5",
+      password: "$2b$10$zIlxskYdfMtV.W3nFqj9fu7Z3vF1yShnqtPrk7F32AMKNSai2gSNG", // James1234!
       phone: "+44 7700 900 001",
       role: "GUEST",
     },
@@ -96,7 +96,7 @@ async function main() {
       name: "Yuki Tanaka",
       email: "yuki@example.com",
       username: "yuki_guest",
-      password: "$2b$10$placeholderHashedPassword6",
+      password: "$2b$10$3kpoJiAHi1lnkGAab9N5yOho5sh2CZw93jrZ3XJvYcqposXfb89j6", // Yuki1234!
       phone: "+81 90 0000 0001",
       role: "GUEST",
     },
@@ -115,6 +115,7 @@ async function main() {
       guests: 6,
       type: "HOUSE",
       amenities: ["WiFi", "Infinity pool", "Air conditioning", "Kitchen", "Beach access", "Parking", "BBQ"],
+      status: "APPROVED",
       hostId: sarah.id,
       photos: {
         create: [
@@ -137,6 +138,7 @@ async function main() {
       guests: 4,
       type: "APARTMENT",
       amenities: ["WiFi", "Rooftop terrace", "Gym", "Doorman", "Air conditioning", "Smart TV"],
+      status: "APPROVED",
       hostId: sarah.id,
       photos: {
         create: [
@@ -159,6 +161,7 @@ async function main() {
       guests: 8,
       type: "HOUSE",
       amenities: ["WiFi", "Pool", "Kitchen", "Vineyard", "Olive grove", "Parking", "BBQ", "Garden"],
+      status: "APPROVED",
       hostId: marco.id,
       photos: {
         create: [
@@ -180,6 +183,7 @@ async function main() {
       guests: 3,
       type: "APARTMENT",
       amenities: ["WiFi", "Balcony", "Kitchen", "Washing machine", "Air conditioning", "Elevator"],
+      status: "APPROVED",
       hostId: marco.id,
       photos: {
         create: [
@@ -201,6 +205,7 @@ async function main() {
       guests: 2,
       type: "OTHER",
       amenities: ["WiFi", "Butler service", "Snorkeling gear", "Kayak", "Breakfast included", "Air conditioning", "Private deck"],
+      status: "APPROVED",
       hostId: sarah.id,
       photos: {
         create: [
@@ -222,6 +227,7 @@ async function main() {
       guests: 10,
       type: "HOUSE",
       amenities: ["WiFi", "Sauna", "Hot tub", "Ski storage", "Fireplace", "Kitchen", "Parking"],
+      status: "APPROVED",
       hostId: marco.id,
       photos: {
         create: [
@@ -243,6 +249,7 @@ async function main() {
       guests: 1,
       type: "VILLA",
       amenities: ["WiFi", "Kitchen access", "Laundry", "Smart TV", "Workspace"],
+      status: "APPROVED",
       hostId: sarah.id,
       photos: {
         create: [
@@ -253,7 +260,7 @@ async function main() {
     },
   });
 
-  const malibuHouse = await prisma.listing.create({
+  await prisma.listing.create({
     data: {
       title: "Modernist Malibu Hillside House",
       description:
@@ -263,6 +270,7 @@ async function main() {
       guests: 6,
       type: "HOUSE",
       amenities: ["WiFi", "Infinity pool", "Home cinema", "Gym", "Ocean view", "Kitchen", "Parking", "BBQ"],
+      status: "APPROVED",
       hostId: marco.id,
       photos: {
         create: [

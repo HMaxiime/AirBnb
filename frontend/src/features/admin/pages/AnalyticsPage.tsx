@@ -52,7 +52,7 @@ export function AnalyticsPage(): React.JSX.Element {
   const { data: stats }         = useAdminStats();
   const { data: bookings = [] } = useAllBookings();
   const { data: users = [] }    = useQuery<MockUser[]>({ queryKey: ["users"], queryFn: userService.getAll });
-  const { data: history = [] }  = useQuery({ queryKey: ["moderation-history"], queryFn: listingService.getModerationHistory });
+  const { data: history = [] }  = useQuery({ queryKey: ["moderation-history"], queryFn: listingService.getModerationHistory, staleTime: 0 });
 
   const monthly     = monthlyStats(bookings);
   const activity    = userActivity(users, bookings);

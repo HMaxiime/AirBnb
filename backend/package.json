@@ -4,23 +4,23 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "nodemon --exec tsx src/index.ts",
-    "build": "tsc",
+    "dev": "node node_modules/nodemon/bin/nodemon.js --exec 'node node_modules/tsx/dist/cli.mjs' src/index.ts",
+    "build": "node node_modules/typescript/bin/tsc",
     "start": "node dist/index.js",
-    "migrate": "prisma migrate deploy",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:prod": "prisma migrate deploy",
-    "db:reset": "prisma migrate reset",
-    "db:seed": "prisma db seed",
-    "db:studio": "prisma studio",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:status": "prisma migrate status",
-    "db:fresh": "prisma migrate reset && prisma db seed",
-    "postinstall": "prisma generate"
+    "migrate": "node node_modules/prisma/build/index.js migrate deploy",
+    "db:migrate": "node node_modules/prisma/build/index.js migrate dev",
+    "db:migrate:prod": "node node_modules/prisma/build/index.js migrate deploy",
+    "db:reset": "node node_modules/prisma/build/index.js migrate reset",
+    "db:seed": "node node_modules/prisma/build/index.js db seed",
+    "db:studio": "node node_modules/prisma/build/index.js studio",
+    "db:generate": "node node_modules/prisma/build/index.js generate",
+    "db:push": "node node_modules/prisma/build/index.js db push",
+    "db:status": "node node_modules/prisma/build/index.js migrate status",
+    "db:fresh": "node node_modules/prisma/build/index.js migrate reset && node node_modules/prisma/build/index.js db seed",
+    "postinstall": "node node_modules/prisma/build/index.js generate"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "node node_modules/tsx/dist/cli.mjs prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
